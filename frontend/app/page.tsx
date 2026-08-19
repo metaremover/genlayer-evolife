@@ -22,7 +22,7 @@ import {
   ArrowUpRight 
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000'; // To be replaced on deployment
+const CONTRACT_ADDRESS = '0x8dDb7552100013B72709e745795A7608CBB92c54';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
 export default function EvoLifeDashboard() {
