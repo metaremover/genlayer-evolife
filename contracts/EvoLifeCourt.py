@@ -41,10 +41,12 @@ class EvoLifeCourt(gl.Contract):
     organism: OrganismState
     genealogy: TreeMap[u256, GenerationRecord]
     total_generations: u256
+    last_mutation_epoch_ts: u256
 
     def __init__(self, operator: str):
         self.operator = operator.strip().strip('"').strip("'").lower()
         self.total_generations = u256(1)
+        self.last_mutation_epoch_ts = u256(0)
 
         # Initialize Genesis Generation (Gen 0)
         self.organism = OrganismState(
@@ -57,7 +59,7 @@ class EvoLifeCourt(gl.Contract):
             metabolism_rate=u256(50),
             adaptation_score=u256(50),
             dna_hash="0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56",
-            last_mutation_date="2026-08-19",
+            last_mutation_date="2026-08-20",
             last_mutation_summary="Genesis synthetic lifeform initialized on GenLayer."
         )
 
@@ -68,8 +70,8 @@ class EvoLifeCourt(gl.Contract):
             vitality=u256(80),
             defense_level=u256(30),
             metabolism_rate=u256(50),
-            trigger_env_url="https://evolife.genlayer.com/genesis",
-            timestamp_utc="2026-08-19 12:00:00",
+            trigger_env_url="https://evolife-pi.vercel.app/genesis",
+            timestamp_utc="2026-08-20 12:00:00",
             mutation_reasoning="Genesis initialization."
         )
 
@@ -90,12 +92,22 @@ class EvoLifeCourt(gl.Contract):
         """
         Perceives external environment signals, audits threat & opportunity,
         and mutates the on-chain organism's genome and morphology autonomously.
+        Enforces non-replayable cadence, fresh telemetry, and strict fail-closed validation.
         """
         clean_url = env_feed_url.strip().strip('"').strip("'")
         assert clean_url.startswith("http://") or clean_url.startswith("https://"), \
             "[ERR_URL_01] Valid HTTP/HTTPS environmental telemetry URL required."
 
-        # STEP 1: AUTHORITATIVE UTC ATOMIC CLOCK GUARD
+        # Extract storage fields into plain local primitive variables
+        curr_org_id = str(self.organism.organism_id)
+        curr_gen_int = int(self.organism.generation)
+        curr_morph = str(self.organism.morph_class)
+        curr_vit = int(self.organism.vitality)
+        curr_def = int(self.organism.defense_level)
+        curr_met = int(self.organism.metabolism_rate)
+        last_mut_date = str(self.organism.last_mutation_date)
+
+        # STEP 1: AUTHORITATIVE UTC ATOMIC CLOCK GUARD (NON-REPLAYABLE CADENCE)
         time_url = "https://timeapi.io/api/time/current/zone?timeZone=UTC"
 
         def get_time_input() -> str:
@@ -103,13 +115,13 @@ class EvoLifeCourt(gl.Contract):
             return (
                 f"=== AUTHORITATIVE UTC ATOMIC CLOCK FEED ===\n"
                 f"{time_resp}\n\n"
-                f"Organism Last Mutation Date: {self.organism.last_mutation_date}"
+                f"Organism Last Mutation Date: {last_mut_date}"
             )
 
         time_task = (
             "You are an authoritative calendar clock auditor.\n"
             "Parse the live UTC Clock API response.\n"
-            "Extract today's UTC date (YYYY-MM-DD) and full timestamp.\n"
+            "Extract today's UTC date (YYYY-MM-DD format), the current hour, and full ISO timestamp.\n"
             "Determine if clock response is fresh and valid.\n\n"
             "Output JSON format:\n"
             "{\n"
@@ -124,7 +136,7 @@ class EvoLifeCourt(gl.Contract):
             "Independently parse the live UTC Clock API JSON to extract today's date (YYYY-MM-DD). "
             "REJECT the leader if: "
             "(1) today_date does not match the live UTC date in the API response, or "
-            "(2) clock_fresh is marked true when the clock API response is missing or unparseable."
+            "(2) clock_fresh is marked true when the clock API response is missing, stale, or unparseable."
         )
 
         time_result = gl.eq_principle.prompt_non_comparative(
@@ -145,10 +157,10 @@ class EvoLifeCourt(gl.Contract):
 
         time_parsed = json.loads(raw_time)
         clock_fresh = bool(time_parsed.get("clock_fresh", False))
-        today_str = str(time_parsed.get("today_date", "2026-08-19"))
-        full_timestamp = str(time_parsed.get("full_timestamp", "2026-08-19 12:00:00"))
+        today_str = str(time_parsed.get("today_date", "2026-08-20"))
+        full_timestamp = str(time_parsed.get("full_timestamp", "2026-08-20 12:00:00"))
 
-        assert clock_fresh == True, "[ERR_CLOCK_01] Failed to retrieve fresh authoritative UTC clock."
+        assert clock_fresh == True, "[ERR_CLOCK_01] Failed to retrieve fresh authoritative UTC clock (Fail-Closed)."
 
         # STEP 2: NON-DETERMINISTIC ENVIRONMENTAL PERCEPTION
         def get_env_input() -> str:
@@ -159,39 +171,32 @@ class EvoLifeCourt(gl.Contract):
 
             return (
                 f"=== EVOLIFE CYBERNETIC HABITAT TELEMETRY ===\n"
-                f"Organism ID: {self.organism.organism_id}\n"
-                f"Current Generation: Epoch {int(self.organism.generation)}\n"
-                f"Current Morph Class: {self.organism.morph_class}\n"
-                f"Current Vitality: {int(self.organism.vitality)}%\n"
-                f"Current Defense: {int(self.organism.defense_level)}%\n"
-                f"Current Metabolism: {int(self.organism.metabolism_rate)} bpm\n\n"
+                f"Organism ID: {curr_org_id}\n"
+                f"Current Generation: Epoch {curr_gen_int}\n"
+                f"Current Morph Class: {curr_morph}\n"
+                f"Current Vitality: {curr_vit}%\n"
+                f"Current Defense: {curr_def}%\n"
+                f"Current Metabolism: {curr_met} bpm\n"
+                f"Current UTC Timestamp: {full_timestamp}\n\n"
                 f"=== INGESTED TELEMETRY STREAM ===\n"
                 f"{env_data}"
             )
 
         task = (
             "You are the Autonomous Evolution Engine for EvoLife.\n"
-            "Audit the external environment telemetry and determine the optimal survival mutation.\n\n"
-            "Evaluate:\n"
-            "1. adaptation_state: Strict enum ('ARMORED_CRYOBIOSIS', 'BIOLUMINESCENT_BLOOM', 'SYNAPTIC_TRANSCENDENCE')\n"
-            "   - ARMORED_CRYOBIOSIS: Triggered on crisis, high volatility, stress, scarcity. (High defense, low metabolism).\n"
-            "   - BIOLUMINESCENT_BLOOM: Triggered on harmony, prosperity, surplus. (High vitality, high growth).\n"
-            "   - SYNAPTIC_TRANSCENDENCE: Triggered on novelty, chaotic flux, high information density.\n"
-            "2. morph_class: Descriptive string (e.g. 'CHITIN_ARMORED_BEHEMOTH', 'LUMINESCENT_EXPEDITION_HYDRA', 'SYNAPTIC_AETHER_SENTRY')\n"
-            "3. new_vitality: Integer 0 to 100\n"
-            "4. new_defense: Integer 0 to 100\n"
-            "5. new_metabolism: Integer 10 to 100\n"
-            "6. adaptation_score: Integer 0 to 100\n"
-            "7. reasoning: Concise 1-2 sentence explanation of environmental reaction.\n\n"
+            "Audit the external environment telemetry and determine the optimal survival adaptation.\n\n"
+            "Verify:\n"
+            "1. Telemetry Freshness & Authenticity: Confirm the feed contains valid habitat telemetry data.\n"
+            "2. adaptation_state: Strict enum string ('ARMORED_CRYOBIOSIS', 'BIOLUMINESCENT_BLOOM', 'SYNAPTIC_TRANSCENDENCE')\n"
+            "   - ARMORED_CRYOBIOSIS: Mandated when telemetry indicates storm, crisis, high volatility, or resource scarcity.\n"
+            "   - BIOLUMINESCENT_BLOOM: Mandated when telemetry indicates harmony, prosperity, stability, or resource surplus.\n"
+            "   - SYNAPTIC_TRANSCENDENCE: Mandated when telemetry indicates cognitive anomaly, chaotic flux, or high information density.\n"
+            "3. reasoning: Concise 1-2 sentence explanation of environmental reaction.\n\n"
             "Output JSON format:\n"
             "{\n"
+            '  "telemetry_valid": true/false,\n'
             '  "adaptation_state": "<ARMORED_CRYOBIOSIS|BIOLUMINESCENT_BLOOM|SYNAPTIC_TRANSCENDENCE>",\n'
-            '  "morph_class": "<string>",\n'
-            '  "new_vitality": <int>,\n'
-            '  "new_defense": <int>,\n'
-            '  "new_metabolism": <int>,\n'
-            '  "adaptation_score": <int>,\n'
-            '  "reasoning": "<string>"\n'
+            '  "reasoning": "<sentence>"\n'
             "}\n"
             "Respond ONLY with raw JSON."
         )
@@ -199,16 +204,13 @@ class EvoLifeCourt(gl.Contract):
         criteria = (
             "EvoLife Mutation Equivalence Rule:\n"
             "1. Strict Fields (100% exact match required):\n"
+            "   - telemetry_valid (boolean: true if telemetry stream is accessible and non-empty, false if error)\n"
             "   - adaptation_state (enum 'ARMORED_CRYOBIOSIS', 'BIOLUMINESCENT_BLOOM', 'SYNAPTIC_TRANSCENDENCE')\n"
-            "2. Bounded Fuzzy Fields:\n"
-            "   - new_vitality (+-5 points tolerance)\n"
-            "   - new_defense (+-5 points tolerance)\n"
-            "   - new_metabolism (+-5 points tolerance)\n"
-            "   - adaptation_score (+-10 points tolerance)\n"
-            "Independently analyze the environment telemetry. REJECT the leader proposal if:\n"
-            "(1) adaptation_state is marked BIOLUMINESCENT_BLOOM when telemetry indicates crisis/storm,\n"
-            "(2) adaptation_state is marked ARMORED_CRYOBIOSIS when telemetry indicates optimal harmony/abundance,\n"
-            "(3) defense target does not increase during severe crisis.\n"
+            "Independently audit the environment telemetry. REJECT the leader proposal if:\n"
+            "(1) telemetry_valid is marked true when telemetry fetch failed or is unparseable,\n"
+            "(2) adaptation_state is marked BIOLUMINESCENT_BLOOM when telemetry indicates crisis/storm/stress,\n"
+            "(3) adaptation_state is marked ARMORED_CRYOBIOSIS when telemetry indicates optimal harmony/abundance,\n"
+            "(4) adaptation_state is not marked SYNAPTIC_TRANSCENDENCE when telemetry indicates novel cognitive anomaly.\n"
             "Output must be valid JSON matching the schema."
         )
 
@@ -229,13 +231,31 @@ class EvoLifeCourt(gl.Contract):
                 raw_res = raw_res.replace("```json", "").replace("```", "").strip()
 
         res_parsed = json.loads(raw_res)
+        telemetry_valid = bool(res_parsed.get("telemetry_valid", False))
+        assert telemetry_valid == True, "[ERR_TELEMETRY_01] Telemetry stream invalid or inaccessible (Fail-Closed)."
+
         state_enum = str(res_parsed.get("adaptation_state", "BIOLUMINESCENT_BLOOM")).strip().upper()
-        morph_name = str(res_parsed.get("morph_class", "ADAPTIVE_CHITIN_ORGANISM")).strip()
-        v_new = max(10, min(100, int(res_parsed.get("new_vitality", 85))))
-        d_new = max(10, min(100, int(res_parsed.get("new_defense", 85))))
-        m_new = max(10, min(100, int(res_parsed.get("new_metabolism", 45))))
-        a_score = max(10, min(100, int(res_parsed.get("adaptation_score", 90))))
         reasoning = str(res_parsed.get("reasoning", "Organism adapted to habitat flux."))
+
+        # DETERMINISTIC MORPHOLOGY & VITAL METRICS CALCULATION
+        if state_enum == "ARMORED_CRYOBIOSIS":
+            morph_name = "Chitin-Armored Behemoth"
+            v_new = max(10, curr_vit - 8)   # stress impact
+            d_new = 95                      # hardened defense shell
+            m_new = 20                      # slowed metabolism hibernation
+            a_score = 96
+        elif state_enum == "BIOLUMINESCENT_BLOOM":
+            morph_name = "Luminescent Spore Hydra"
+            v_new = min(100, curr_vit + 12) # vitality boost
+            d_new = 40                      # light defense
+            m_new = 75                      # active metabolism
+            a_score = 95
+        else: # SYNAPTIC_TRANSCENDENCE
+            morph_name = "Synaptic Aether Sentry"
+            v_new = curr_vit
+            d_new = 65
+            m_new = 55
+            a_score = 99
 
         # Advance Generation
         next_gen_num = int(self.organism.generation) + 1
