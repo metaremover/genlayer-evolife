@@ -8,7 +8,7 @@ Built to fulfill GenLayer Core's official wishlist (*"Lifeform: A self-evolving 
 
 ## 🔗 Live Deployment & Repository Links
 
-- **GenLayer Explorer Contract**: [`0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e`](https://explorer-studio.genlayer.com/address/0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e)
+- **GenLayer Explorer Contract**: [`0x2080A28f61b3443D1682A57a7e6838cb06e50c0f`](https://explorer-studio.genlayer.com/address/0x2080A28f61b3443D1682A57a7e6838cb06e50c0f)
 - **GitHub Repository**: [`https://github.com/metaremover/genlayer-evolife`](https://github.com/metaremover/genlayer-evolife)
 - **Live Cybernetic Dashboard**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
 
@@ -55,7 +55,7 @@ Open [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/) to view 
 > *Result: Organism advances to Epoch 1, mutates into `ARMORED_CRYOBIOSIS`, hardens defense shell to 95%, and slows metabolism to 20 bpm.*
 
 ### 4. Inspect On-Chain Generational Tree (`get_generation_record`)
-* Call `get_generation_record(1)` to inspect the immutable historical archive of Epoch 1.
+* Call `get_generation_record("1")` to inspect the immutable historical archive of Epoch 1.
 
 ---
 
@@ -63,7 +63,7 @@ Open [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/) to view 
 
 ```bash
 export GENLAYER_RPC="https://studio.genlayer.com/api"
-export EVOLIFE_CONTRACT="0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e"
+export EVOLIFE_CONTRACT="0x2080A28f61b3443D1682A57a7e6838cb06e50c0f"
 export ENV_TELEMETRY_URL="https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html"
 
 # Run autonomous habitat loop
