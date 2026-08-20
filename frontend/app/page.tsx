@@ -24,7 +24,7 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e';
+const CONTRACT_ADDRESS = '0x2080A28f61b3443D1682A57a7e6838cb06e50c0f';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
 interface GenerationRecord {
@@ -148,7 +148,7 @@ export default function EvoLifeDashboard() {
                 params: {
                   address: CONTRACT_ADDRESS,
                   function_name: 'get_generation_record',
-                  args: [i]
+                  args: [String(i)]
                 },
                 id: Date.now() + i + 2
               })
