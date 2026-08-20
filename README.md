@@ -8,7 +8,7 @@ Built to fulfill GenLayer Core's official wishlist (*"Lifeform: A self-evolving 
 
 ## 🔗 Live Deployment & Repository Links
 
-- **GenLayer Explorer Contract**: [`0x174714Bb882CF1538c497F265B745fA85f0213FD`](https://explorer-studio.genlayer.com/address/0x174714Bb882CF1538c497F265B745fA85f0213FD)
+- **GenLayer Explorer Contract**: [`0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e`](https://explorer-studio.genlayer.com/address/0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e)
 - **GitHub Repository**: [`https://github.com/metaremover/genlayer-evolife`](https://github.com/metaremover/genlayer-evolife)
 - **Live Cybernetic Dashboard**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
 
@@ -63,7 +63,7 @@ Open [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/) to view 
 
 ```bash
 export GENLAYER_RPC="https://studio.genlayer.com/api"
-export EVOLIFE_CONTRACT="0x174714Bb882CF1538c497F265B745fA85f0213FD"
+export EVOLIFE_CONTRACT="0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e"
 export ENV_TELEMETRY_URL="https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html"
 
 # Run autonomous habitat loop
