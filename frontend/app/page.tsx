@@ -19,11 +19,25 @@ import {
   Globe, 
   Atom, 
   Clock, 
-  ArrowUpRight 
+  ArrowUpRight, 
+  CheckCircle, 
+  AlertTriangle 
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0x174714Bb882CF1538c497F265B745fA85f0213FD';
+const CONTRACT_ADDRESS = '0xD1e0fBf8c7B0dAdb05fa8A26390d60b548a42A1e';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
+
+interface GenerationRecord {
+  gen: number;
+  name: string;
+  morph: string;
+  vitality: number;
+  defense: number;
+  metabolism: number;
+  dna: string;
+  date: string;
+  reasoning: string;
+}
 
 export default function EvoLifeDashboard() {
   const [activeTab, setActiveTab] = useState<'habitat' | 'genealogy' | 'telemetry'>('habitat');
@@ -31,75 +45,40 @@ export default function EvoLifeDashboard() {
   const [selectedDemo, setSelectedDemo] = useState<'growth' | 'crisis' | 'anomaly'>('growth');
   const [feedAmount, setFeedAmount] = useState<number>(15);
   const [rpcLogs, setRpcLogs] = useState<string[]>([]);
+  const [genealogy, setGenealogy] = useState<GenerationRecord[]>([]);
 
-  // Organism Live State from Finalized GenLayer State
+  // Organism Live State directly from Contract Views
   const [organism, setOrganism] = useState({
     organism_id: 'ORGANISM_SYNTH_001',
-    generation: 2,
-    name: 'Luminescent Spore Hydra',
-    morph_class: 'BIOLUMINESCENT_BLOOM',
-    vitality: 92,
-    defense_level: 45,
-    metabolism_rate: 68,
-    adaptation_score: 94,
+    generation: 0,
+    name: 'Genesis Amoeba',
+    morph_class: 'GENESIS_PROTO_AMOEBA',
+    vitality: 80,
+    defense_level: 30,
+    metabolism_rate: 50,
+    adaptation_score: 50,
     dna_hash: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-    last_mutation_date: '2026-08-19',
-    last_mutation_summary: 'Epoch 2 Mutated: BIOLUMINESCENT_BLOOM. Optimal ecosystem prosperity observed. Cellular expansion and vitality maximized.'
+    last_mutation_date: '2026-08-20',
+    last_mutation_summary: 'Genesis synthetic lifeform initialized on GenLayer.'
   });
 
-  // Generational Lineage
-  const [genealogy, setGenealogy] = useState([
-    {
-      gen: 0,
-      name: 'Genesis Proto-Amoeba',
-      morph: 'GENESIS_PROTO_AMOEBA',
-      vitality: 80,
-      defense: 30,
-      metabolism: 50,
-      dna: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-      date: '2026-08-19 10:00:00',
-      reasoning: 'Genesis synthetic lifeform initialized on GenLayer.'
-    },
-    {
-      gen: 1,
-      name: 'Chitin-Armored Behemoth',
-      morph: 'ARMORED_CRYOBIOSIS',
-      vitality: 74,
-      defense: 95,
-      metabolism: 28,
-      dna: '0x9b4c71a39f02c918239482910394817e12a89c14',
-      date: '2026-08-19 11:30:00',
-      reasoning: 'Surpassed macroeconomic volatility crisis. Defense shell hardened to 95%.'
-    },
-    {
-      gen: 2,
-      name: 'Luminescent Spore Hydra',
-      morph: 'BIOLUMINESCENT_BLOOM',
-      vitality: 92,
-      defense: 45,
-      metabolism: 68,
-      dna: '0x4e8a109fc832d56ba92171c371546f55c131acd5',
-      date: '2026-08-19 12:45:00',
-      reasoning: 'Ecosystem prosperity detected. Cellular expansion and vitality surge.'
-    }
-  ]);
-
   const demoUrls = {
-    growth: 'https://evolife-web.vercel.app/demo/mock_env_harmony_growth.html',
-    crisis: 'https://evolife-web.vercel.app/demo/mock_env_storm_crisis.html',
-    anomaly: 'https://evolife-web.vercel.app/demo/mock_env_novel_anomaly.html'
+    growth: 'https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html',
+    crisis: 'https://evolife-pi.vercel.app/demo/mock_env_storm_crisis.html',
+    anomaly: 'https://evolife-pi.vercel.app/demo/mock_env_novel_anomaly.html'
   };
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
-    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 15)]);
+    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 18)]);
   };
 
-  // Real GenLayer View Call to Synchronize State
+  // Real GenLayer View Call to Synchronize State & Load Genealogy
   const syncOrganismFromChain = async () => {
     setIsCallingRpc(true);
     addLog(`Querying finalized organism state via gen_callView("get_organism_state")...`);
     try {
+      // 1. Fetch Organism State
       const res = await fetch(GENLAYER_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,27 +93,96 @@ export default function EvoLifeDashboard() {
           id: Date.now()
         })
       });
+
       if (res.ok) {
         const data = await res.json();
         if (data.result) {
           const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-          setOrganism(prev => ({
-            ...prev,
-            generation: Number(parsed.generation) || prev.generation,
-            name: parsed.name || prev.name,
-            morph_class: parsed.morph_class || prev.morph_class,
-            vitality: Number(parsed.vitality) || prev.vitality,
-            defense_level: Number(parsed.defense_level) || prev.defense_level,
-            metabolism_rate: Number(parsed.metabolism_rate) || prev.metabolism_rate,
-            adaptation_score: Number(parsed.adaptation_score) || prev.adaptation_score,
-            dna_hash: parsed.dna_hash || prev.dna_hash,
-            last_mutation_summary: parsed.last_mutation_summary || prev.last_mutation_summary
-          }));
-          addLog(`✓ Finalized state synced: Generation=${parsed.generation}, Morph=${parsed.morph_class}`);
+          setOrganism({
+            organism_id: parsed.organism_id || 'ORGANISM_SYNTH_001',
+            generation: Number(parsed.generation) || 0,
+            name: parsed.name || 'Adaptive Organism',
+            morph_class: parsed.morph_class || 'GENESIS_PROTO_AMOEBA',
+            vitality: Number(parsed.vitality) || 80,
+            defense_level: Number(parsed.defense_level) || 30,
+            metabolism_rate: Number(parsed.metabolism_rate) || 50,
+            adaptation_score: Number(parsed.adaptation_score) || 50,
+            dna_hash: parsed.dna_hash || '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
+            last_mutation_date: parsed.last_mutation_date || '2026-08-20',
+            last_mutation_summary: parsed.last_mutation_summary || 'Organism synchronized.'
+          });
+          addLog(`✓ Finalized on-chain state synced: Epoch ${parsed.generation} (${parsed.morph_class})`);
+        }
+      }
+
+      // 2. Fetch Total Generations & Load Entire Genealogy from Contract Views
+      const totalGenRes = await fetch(GENLAYER_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'gen_callView',
+          params: {
+            address: CONTRACT_ADDRESS,
+            function_name: 'get_total_generations',
+            args: []
+          },
+          id: Date.now() + 1
+        })
+      });
+
+      if (totalGenRes.ok) {
+        const totalGenData = await totalGenRes.json();
+        const totalCount = Number(totalGenData.result) || 1;
+        addLog(`Loading ${totalCount} generation record(s) from contract views...`);
+
+        const loadedRecords: GenerationRecord[] = [];
+        for (let i = 0; i < totalCount; i++) {
+          try {
+            const genRes = await fetch(GENLAYER_RPC, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'gen_callView',
+                params: {
+                  address: CONTRACT_ADDRESS,
+                  function_name: 'get_generation_record',
+                  args: [i]
+                },
+                id: Date.now() + i + 2
+              })
+            });
+
+            if (genRes.ok) {
+              const genData = await genRes.json();
+              if (genData.result) {
+                const gParsed = typeof genData.result === 'string' ? JSON.parse(genData.result) : genData.result;
+                loadedRecords.push({
+                  gen: Number(gParsed.generation_num) || i,
+                  name: `Epoch ${i} Lifeform`,
+                  morph: gParsed.morph_class || 'GENESIS',
+                  vitality: Number(gParsed.vitality) || 80,
+                  defense: Number(gParsed.defense_level) || 30,
+                  metabolism: Number(gParsed.metabolism_rate) || 50,
+                  dna: gParsed.dna_hash || '0x...',
+                  date: gParsed.timestamp_utc || '2026-08-20',
+                  reasoning: gParsed.mutation_reasoning || 'Generational adaptation recorded.'
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`Error loading epoch ${i}:`, err);
+          }
+        }
+
+        if (loadedRecords.length > 0) {
+          setGenealogy(loadedRecords);
+          addLog(`✓ Loaded ${loadedRecords.length} historical epoch(s) from contract storage.`);
         }
       }
     } catch (e) {
-      addLog(`State synchronized with GenLayer.`);
+      addLog(`[FAIL-CLOSED] Error communicating with GenLayer RPC.`);
     } finally {
       setIsCallingRpc(false);
     }
@@ -143,9 +191,9 @@ export default function EvoLifeDashboard() {
   // Real GenLayer Write: Feed Nutrients
   const handleFeedNutrients = async () => {
     setIsCallingRpc(true);
-    addLog(`Executing gen_sendTransaction("feed_nutrients", [${feedAmount}])...`);
+    addLog(`Broadcasting gen_sendTransaction("feed_nutrients", [${feedAmount}])...`);
     try {
-      await fetch(GENLAYER_RPC, {
+      const res = await fetch(GENLAYER_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,14 +208,20 @@ export default function EvoLifeDashboard() {
         })
       });
 
-      setOrganism(prev => ({
-        ...prev,
-        vitality: Math.min(100, prev.vitality + feedAmount),
-        last_mutation_summary: `Nutrients ingested (+${feedAmount}%). Vitality replenished to ${Math.min(100, prev.vitality + feedAmount)}%.`
-      }));
-      addLog(`✓ Nutrients ingested. Vitality replenished.`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.error) {
+          addLog(`🚨 [FAIL-CLOSED] Feeding rejected: ${JSON.stringify(data.error)}`);
+        } else {
+          addLog(`✓ Nutrients transaction accepted on GenLayer.`);
+          // Synchronize strictly from verified contract state
+          await syncOrganismFromChain();
+        }
+      } else {
+        addLog(`🚨 [FAIL-CLOSED] RPC HTTP Error ${res.status}`);
+      }
     } catch (e) {
-      addLog(`Nutrient transaction executed.`);
+      addLog(`🚨 [FAIL-CLOSED] Nutrient transaction failed.`);
     } finally {
       setIsCallingRpc(false);
     }
@@ -178,11 +232,11 @@ export default function EvoLifeDashboard() {
     setIsCallingRpc(true);
     const targetUrl = demoUrls[selectedDemo];
     addLog(`1. Authoritative UTC atomic clock checked (timeapi.io)...`);
-    addLog(`2. Ingesting environment telemetry: ${targetUrl}`);
+    addLog(`2. Ingesting fresh environment telemetry: ${targetUrl}`);
     addLog(`3. Broadcasting gen_sendTransaction("trigger_evolution_cycle")...`);
 
     try {
-      await fetch(GENLAYER_RPC, {
+      const res = await fetch(GENLAYER_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -197,63 +251,28 @@ export default function EvoLifeDashboard() {
         })
       });
 
-      if (selectedDemo === 'crisis') {
-        const nextGen = organism.generation + 1;
-        setOrganism(prev => ({
-          ...prev,
-          generation: nextGen,
-          name: 'Chitin-Armored Behemoth',
-          morph_class: 'ARMORED_CRYOBIOSIS',
-          vitality: 72,
-          defense_level: 95,
-          metabolism_rate: 25,
-          adaptation_score: 96,
-          dna_hash: '0x' + Math.random().toString(16).slice(2, 10) + '9b4c71a39f02c91823948291',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: ARMORED_CRYOBIOSIS. Macro turmoil detected. Defense shell hardened to 95% and metabolic burn reduced to preserve cellular integrity.`
-        }));
-        addLog(`✓ Consensus Reached: ARMORED_CRYOBIOSIS (Defense hardened to 95%).`);
-      } else if (selectedDemo === 'growth') {
-        const nextGen = organism.generation + 1;
-        setOrganism(prev => ({
-          ...prev,
-          generation: nextGen,
-          name: 'Luminescent Spore Hydra',
-          morph_class: 'BIOLUMINESCENT_BLOOM',
-          vitality: 98,
-          defense_level: 45,
-          metabolism_rate: 72,
-          adaptation_score: 95,
-          dna_hash: '0x' + Math.random().toString(16).slice(2, 10) + '4e8a109fc832d56ba92171c3',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: BIOLUMINESCENT_BLOOM. Optimal ecosystem prosperity observed. Cellular expansion and vitality surge to 98%.`
-        }));
-        addLog(`✓ Consensus Reached: BIOLUMINESCENT_BLOOM (Vitality surged to 98%).`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.error) {
+          addLog(`🚨 [FAIL-CLOSED] Evolution rejected: ${JSON.stringify(data.error)}`);
+        } else {
+          addLog(`✓ Evolution transaction accepted! Updating from contract views...`);
+          // Await final state synchronization strictly from contract storage
+          await syncOrganismFromChain();
+        }
       } else {
-        const nextGen = organism.generation + 1;
-        setOrganism(prev => ({
-          ...prev,
-          generation: nextGen,
-          name: 'Synaptic Aether Sentry',
-          morph_class: 'SYNAPTIC_TRANSCENDENCE',
-          vitality: 88,
-          defense_level: 60,
-          metabolism_rate: 55,
-          adaptation_score: 99,
-          dna_hash: '0x' + Math.random().toString(16).slice(2, 10) + 'e57193f412a89c1409fae1aa',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: SYNAPTIC_TRANSCENDENCE. Cognitive novelty spike detected. Developed 4 sensory tendrils to decode chaos entropy.`
-        }));
-        addLog(`✓ Consensus Reached: SYNAPTIC_TRANSCENDENCE (Sensory tendrils sprouted).`);
+        addLog(`🚨 [FAIL-CLOSED] RPC HTTP Error ${res.status}`);
       }
-
-      await syncOrganismFromChain();
     } catch (e) {
-      addLog(`Evolution transaction processed.`);
+      addLog(`🚨 [FAIL-CLOSED] Evolution transaction failed.`);
     } finally {
       setIsCallingRpc(false);
     }
   };
 
   useEffect(() => {
-    addLog(`EvoLife Cybernetic Habitat initialized. Ready for environmental cycles.`);
+    addLog(`EvoLife Cybernetic Habitat initialized. Contract: ${CONTRACT_ADDRESS.slice(0, 10)}...`);
+    syncOrganismFromChain();
   }, []);
 
   // Visual Organism Color Profile
@@ -308,7 +327,7 @@ export default function EvoLifeDashboard() {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Layers className="w-4 h-4" /> 2. Phylogenetic Tree
+              <Layers className="w-4 h-4" /> 2. Phylogenetic Tree ({genealogy.length})
             </button>
             <button
               onClick={() => setActiveTab('telemetry')}
@@ -564,7 +583,7 @@ export default function EvoLifeDashboard() {
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-emerald-400" /> On-Chain Generational Lineage Tree
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Historical archive of all autonomous genome mutations recorded on GenLayer storage.</p>
+                <p className="text-xs text-slate-400 mt-1">Loaded directly from GenLayer contract views (`get_generation_record`).</p>
               </div>
               <span className="text-xs font-mono text-emerald-400 bg-emerald-950 border border-emerald-800/50 px-3 py-1 rounded-full">
                 Total Epochs: {genealogy.length}
@@ -572,26 +591,32 @@ export default function EvoLifeDashboard() {
             </div>
 
             <div className="space-y-4">
-              {genealogy.map((rec, idx) => (
-                <div key={idx} className="p-5 bg-[#060913] rounded-2xl border border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                        Epoch {rec.gen}
-                      </span>
-                      <strong className="text-white text-sm">{rec.name}</strong>
-                      <span className="text-xs text-emerald-400 font-mono">[{rec.morph}]</span>
-                    </div>
-                    <p className="text-xs text-slate-400 font-mono pt-1">{rec.reasoning}</p>
-                  </div>
-
-                  <div className="flex items-center gap-6 text-xs text-slate-400 font-mono">
-                    <div>Vitality: <strong className="text-white">{rec.vitality}%</strong></div>
-                    <div>Defense: <strong className="text-white">{rec.defense}%</strong></div>
-                    <div>DNA: <strong className="text-indigo-400">{rec.dna.slice(0, 10)}...</strong></div>
-                  </div>
+              {genealogy.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 font-mono bg-[#060913] rounded-2xl border border-slate-800">
+                  Loading on-chain genealogy from GenLayer storage...
                 </div>
-              ))}
+              ) : (
+                genealogy.map((rec, idx) => (
+                  <div key={idx} className="p-5 bg-[#060913] rounded-2xl border border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                          Epoch {rec.gen}
+                        </span>
+                        <strong className="text-white text-sm">{rec.name}</strong>
+                        <span className="text-xs text-emerald-400 font-mono">[{rec.morph}]</span>
+                      </div>
+                      <p className="text-xs text-slate-400 font-mono pt-1">{rec.reasoning}</p>
+                    </div>
+
+                    <div className="flex items-center gap-6 text-xs text-slate-400 font-mono">
+                      <div>Vitality: <strong className="text-white">{rec.vitality}%</strong></div>
+                      <div>Defense: <strong className="text-white">{rec.defense}%</strong></div>
+                      <div>DNA: <strong className="text-indigo-400">{rec.dna.slice(0, 10)}...</strong></div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
