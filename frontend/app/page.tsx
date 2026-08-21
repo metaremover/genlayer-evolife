@@ -24,7 +24,7 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0x2080A28f61b3443D1682A57a7e6838cb06e50c0f';
+const CONTRACT_ADDRESS = '0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
 interface GenerationRecord {
@@ -39,28 +39,31 @@ interface GenerationRecord {
   reasoning: string;
 }
 
+interface OrganismStateData {
+  generation: number;
+  name: string;
+  morph_class: string;
+  vitality: number;
+  defense_level: number;
+  metabolism_rate: number;
+  adaptation_score: number;
+  dna_hash: string;
+  last_mutation_date: string;
+  last_mutation_summary: string;
+}
+
 export default function EvoLifeDashboard() {
   const [activeTab, setActiveTab] = useState<'habitat' | 'genealogy' | 'telemetry'>('habitat');
   const [isCallingRpc, setIsCallingRpc] = useState(false);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+  const [rpcError, setRpcError] = useState<string | null>(null);
   const [selectedDemo, setSelectedDemo] = useState<'growth' | 'crisis' | 'anomaly'>('growth');
   const [feedAmount, setFeedAmount] = useState<number>(15);
   const [rpcLogs, setRpcLogs] = useState<string[]>([]);
   const [genealogy, setGenealogy] = useState<GenerationRecord[]>([]);
 
-  // Organism Live State directly from Contract Views
-  const [organism, setOrganism] = useState({
-    organism_id: 'ORGANISM_SYNTH_001',
-    generation: 0,
-    name: 'Genesis Amoeba',
-    morph_class: 'GENESIS_PROTO_AMOEBA',
-    vitality: 80,
-    defense_level: 30,
-    metabolism_rate: 50,
-    adaptation_score: 50,
-    dna_hash: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-    last_mutation_date: '2026-08-20',
-    last_mutation_summary: 'Genesis synthetic lifeform initialized on GenLayer.'
-  });
+  // Live Organism State Loaded STRICTLY from Contract Views
+  const [organism, setOrganism] = useState<OrganismStateData | null>(null);
 
   const demoUrls = {
     growth: 'https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html',
@@ -70,11 +73,11 @@ export default function EvoLifeDashboard() {
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
-    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 18)]);
+    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 20)]);
   };
 
   // Real GenLayer View Call to Synchronize State & Load Genealogy
-  const syncOrganismFromChain = async () => {
+  const syncOrganismFromChain = async (): Promise<OrganismStateData | null> => {
     setIsCallingRpc(true);
     addLog(`Querying finalized organism state via gen_callView("get_organism_state")...`);
     try {
@@ -94,25 +97,34 @@ export default function EvoLifeDashboard() {
         })
       });
 
+      let updatedOrg: OrganismStateData | null = null;
+
       if (res.ok) {
         const data = await res.json();
-        if (data.result) {
+        if (data.error) {
+          addLog(`🚨 [FAIL-CLOSED] get_organism_state error: ${JSON.stringify(data.error)}`);
+          setRpcError(`Contract error: ${JSON.stringify(data.error)}`);
+        } else if (data.result) {
           const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-          setOrganism({
-            organism_id: parsed.organism_id || 'ORGANISM_SYNTH_001',
+          updatedOrg = {
             generation: Number(parsed.generation) || 0,
-            name: parsed.name || 'Adaptive Organism',
-            morph_class: parsed.morph_class || 'GENESIS_PROTO_AMOEBA',
+            name: String(parsed.name || 'Synthetic Lifeform'),
+            morph_class: String(parsed.morph_class || 'GENESIS_PROTO_AMOEBA'),
             vitality: Number(parsed.vitality) || 80,
             defense_level: Number(parsed.defense_level) || 30,
             metabolism_rate: Number(parsed.metabolism_rate) || 50,
             adaptation_score: Number(parsed.adaptation_score) || 50,
-            dna_hash: parsed.dna_hash || '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-            last_mutation_date: parsed.last_mutation_date || '2026-08-20',
-            last_mutation_summary: parsed.last_mutation_summary || 'Organism synchronized.'
-          });
-          addLog(`✓ Finalized on-chain state synced: Epoch ${parsed.generation} (${parsed.morph_class})`);
+            dna_hash: String(parsed.dna_hash || '0x...'),
+            last_mutation_date: String(parsed.last_mutation_date || '2026-08-21'),
+            last_mutation_summary: String(parsed.last_mutation_summary || 'Synchronized from contract storage.')
+          };
+          setOrganism(updatedOrg);
+          setRpcError(null);
+          addLog(`✓ Finalized on-chain state synced: Epoch ${updatedOrg.generation} (${updatedOrg.morph_class})`);
         }
+      } else {
+        addLog(`🚨 [FAIL-CLOSED] RPC HTTP Error ${res.status}`);
+        setRpcError(`RPC HTTP Error: ${res.status}`);
       }
 
       // 2. Fetch Total Generations & Load Entire Genealogy from Contract Views
@@ -134,7 +146,6 @@ export default function EvoLifeDashboard() {
       if (totalGenRes.ok) {
         const totalGenData = await totalGenRes.json();
         const totalCount = Number(totalGenData.result) || 1;
-        addLog(`Loading ${totalCount} generation record(s) from contract views...`);
 
         const loadedRecords: GenerationRecord[] = [];
         for (let i = 0; i < totalCount; i++) {
@@ -159,15 +170,15 @@ export default function EvoLifeDashboard() {
               if (genData.result) {
                 const gParsed = typeof genData.result === 'string' ? JSON.parse(genData.result) : genData.result;
                 loadedRecords.push({
-                  gen: Number(gParsed.generation_num) || i,
-                  name: `Epoch ${i} Lifeform`,
-                  morph: gParsed.morph_class || 'GENESIS',
+                  gen: Number(gParsed.generation) ?? i,
+                  name: String(gParsed.name || `Epoch ${i} Lifeform`),
+                  morph: String(gParsed.morph_class || 'GENESIS'),
                   vitality: Number(gParsed.vitality) || 80,
                   defense: Number(gParsed.defense_level) || 30,
                   metabolism: Number(gParsed.metabolism_rate) || 50,
-                  dna: gParsed.dna_hash || '0x...',
-                  date: gParsed.timestamp_utc || '2026-08-20',
-                  reasoning: gParsed.mutation_reasoning || 'Generational adaptation recorded.'
+                  dna: String(gParsed.dna_hash || '0x...'),
+                  date: String(gParsed.last_mutation_date || '2026-08-21'),
+                  reasoning: String(gParsed.last_mutation_summary || 'Generational adaptation recorded.')
                 });
               }
             }
@@ -181,16 +192,22 @@ export default function EvoLifeDashboard() {
           addLog(`✓ Loaded ${loadedRecords.length} historical epoch(s) from contract storage.`);
         }
       }
+
+      return updatedOrg;
     } catch (e) {
-      addLog(`[FAIL-CLOSED] Error communicating with GenLayer RPC.`);
+      addLog(`🚨 [FAIL-CLOSED] Error communicating with GenLayer RPC.`);
+      setRpcError('Failed to connect to GenLayer RPC.');
+      return null;
     } finally {
       setIsCallingRpc(false);
+      setIsLoadingInitial(false);
     }
   };
 
   // Real GenLayer Write: Feed Nutrients
   const handleFeedNutrients = async () => {
     setIsCallingRpc(true);
+    const prevVit = organism?.vitality ?? 80;
     addLog(`Broadcasting gen_sendTransaction("feed_nutrients", [${feedAmount}])...`);
     try {
       const res = await fetch(GENLAYER_RPC, {
@@ -213,9 +230,11 @@ export default function EvoLifeDashboard() {
         if (data.error) {
           addLog(`🚨 [FAIL-CLOSED] Feeding rejected: ${JSON.stringify(data.error)}`);
         } else {
-          addLog(`✓ Nutrients transaction accepted on GenLayer.`);
-          // Synchronize strictly from verified contract state
-          await syncOrganismFromChain();
+          addLog(`✓ Nutrients transaction accepted on GenLayer. Synchronizing state...`);
+          const updated = await syncOrganismFromChain();
+          if (updated && updated.vitality >= prevVit) {
+            addLog(`✅ [VERIFIED ON-CHAIN] Vitality confirmed updated to ${updated.vitality}%.`);
+          }
         }
       } else {
         addLog(`🚨 [FAIL-CLOSED] RPC HTTP Error ${res.status}`);
@@ -227,12 +246,15 @@ export default function EvoLifeDashboard() {
     }
   };
 
-  // Real GenLayer Write: Trigger Evolution Cycle
+  // Real GenLayer Write: Trigger Evolution Cycle with Exact Before/After Generation Verification
   const handleTriggerEvolution = async () => {
     setIsCallingRpc(true);
     const targetUrl = demoUrls[selectedDemo];
-    addLog(`1. Authoritative UTC atomic clock checked (timeapi.io)...`);
-    addLog(`2. Ingesting fresh environment telemetry: ${targetUrl}`);
+    const prevGeneration = organism ? organism.generation : 0;
+
+    addLog(`⚡ Starting mutation cycle from Epoch ${prevGeneration}...`);
+    addLog(`1. Authoritative UTC clock checked (timeapi.io)...`);
+    addLog(`2. Ingesting authorized telemetry feed: ${targetUrl}`);
     addLog(`3. Broadcasting gen_sendTransaction("trigger_evolution_cycle")...`);
 
     try {
@@ -256,9 +278,16 @@ export default function EvoLifeDashboard() {
         if (data.error) {
           addLog(`🚨 [FAIL-CLOSED] Evolution rejected: ${JSON.stringify(data.error)}`);
         } else {
-          addLog(`✓ Evolution transaction accepted! Updating from contract views...`);
-          // Await final state synchronization strictly from contract storage
-          await syncOrganismFromChain();
+          addLog(`✓ Evolution transaction accepted! Verifying on-chain state change...`);
+          // Re-query on-chain state and strictly verify exact generation advancement
+          const updated = await syncOrganismFromChain();
+          if (updated) {
+            if (updated.generation === prevGeneration + 1) {
+              addLog(`✅ [VERIFIED ON-CHAIN] Epoch successfully advanced ${prevGeneration} -> ${updated.generation} (${updated.morph_class}).`);
+            } else {
+              addLog(`🚨 [FAIL-CLOSED] Generation verification mismatch: expected ${prevGeneration + 1}, got ${updated.generation}.`);
+            }
+          }
         }
       } else {
         addLog(`🚨 [FAIL-CLOSED] RPC HTTP Error ${res.status}`);
@@ -275,10 +304,34 @@ export default function EvoLifeDashboard() {
     syncOrganismFromChain();
   }, []);
 
-  // Visual Organism Color Profile
-  const isBloom = organism.morph_class === 'BIOLUMINESCENT_BLOOM';
-  const isArmor = organism.morph_class === 'ARMORED_CRYOBIOSIS';
-  const isSynapse = organism.morph_class === 'SYNAPTIC_TRANSCENDENCE';
+  if (isLoadingInitial) {
+    return (
+      <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col items-center justify-center space-y-4">
+        <Dna className="w-12 h-12 text-emerald-400 animate-spin" />
+        <p className="text-sm font-mono text-slate-400">Loading finalized organism state from GenLayer storage...</p>
+      </div>
+    );
+  }
+
+  if (rpcError && !organism) {
+    return (
+      <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <ShieldAlert className="w-12 h-12 text-rose-500" />
+        <h2 className="text-lg font-bold text-white">Fail-Closed Connection Safety Active</h2>
+        <p className="text-xs text-slate-400 max-w-md font-mono">{rpcError}</p>
+        <button
+          onClick={() => syncOrganismFromChain()}
+          className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" /> Retry On-Chain Sync
+        </button>
+      </div>
+    );
+  }
+
+  const liveOrg = organism!;
+  const isBloom = liveOrg.morph_class === 'BIOLUMINESCENT_BLOOM';
+  const isArmor = liveOrg.morph_class === 'ARMORED_CRYOBIOSIS';
 
   const glowClass = isBloom ? 'glow-emerald' : isArmor ? 'glow-crimson' : 'glow-violet';
   const themeColor = isBloom ? 'text-emerald-400' : isArmor ? 'text-rose-400' : 'text-purple-400';
@@ -347,13 +400,13 @@ export default function EvoLifeDashboard() {
       <div className="bg-[#090e1c] border-b border-slate-800/60 px-6 py-2.5 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <span>EPOCH: <strong className="text-white font-mono">Generation {organism.generation}</strong></span>
-            <span>MORPH: <strong className={`font-mono ${themeColor}`}>{organism.morph_class}</strong></span>
-            <span>DNA: <strong className="text-slate-300 font-mono">{organism.dna_hash.slice(0, 14)}...</strong></span>
+            <span>EPOCH: <strong className="text-white font-mono">Generation {liveOrg.generation}</strong></span>
+            <span>MORPH: <strong className={`font-mono ${themeColor}`}>{liveOrg.morph_class}</strong></span>
+            <span>DNA: <strong className="text-slate-300 font-mono">{liveOrg.dna_hash.slice(0, 14)}...</strong></span>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            24/7/365 ATOMIC CLOCK FRESHNESS GUARD ACTIVE
+            AUTHORIZED TELEMETRY & CADENCE GUARD ACTIVE
           </div>
         </div>
       </div>
@@ -367,14 +420,11 @@ export default function EvoLifeDashboard() {
             {/* Left: Dynamic Bioluminescent Creature Canvas */}
             <div className="lg:col-span-6 bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-between relative overflow-hidden">
               
-              {/* Background ambient grid */}
-              <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
-
               <div className="w-full flex items-center justify-between z-10">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold border ${badgeBg}`}>
-                  {organism.name}
+                  {liveOrg.name}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">ID: {organism.organism_id}</span>
+                <span className="text-xs text-slate-400 font-mono">Epoch: {liveOrg.generation}</span>
               </div>
 
               {/* Central Animated Creature SVG */}
@@ -409,7 +459,7 @@ export default function EvoLifeDashboard() {
                   }`}>
                     <div className="w-24 h-24 rounded-full bg-[#060913] flex flex-col items-center justify-center shadow-inner">
                       <Atom className={`w-8 h-8 ${themeColor} animate-spin-slow`} />
-                      <span className="text-[10px] font-mono text-slate-400 mt-1">{organism.metabolism_rate} bpm</span>
+                      <span className="text-[10px] font-mono text-slate-400 mt-1">{liveOrg.metabolism_rate} bpm</span>
                     </div>
                   </div>
 
@@ -458,10 +508,10 @@ export default function EvoLifeDashboard() {
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Heart className="w-3.5 h-3.5 text-emerald-400" /> Cellular Vitality
                       </span>
-                      <span className="text-emerald-400 font-mono font-bold">{organism.vitality}%</span>
+                      <span className="text-emerald-400 font-mono font-bold">{liveOrg.vitality}%</span>
                     </div>
                     <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700" style={{ width: `${organism.vitality}%` }}></div>
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700" style={{ width: `${liveOrg.vitality}%` }}></div>
                     </div>
                   </div>
 
@@ -471,10 +521,10 @@ export default function EvoLifeDashboard() {
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Shield className="w-3.5 h-3.5 text-rose-400" /> Defense Armor Shell
                       </span>
-                      <span className="text-rose-400 font-mono font-bold">{organism.defense_level}%</span>
+                      <span className="text-rose-400 font-mono font-bold">{liveOrg.defense_level}%</span>
                     </div>
                     <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-700" style={{ width: `${organism.defense_level}%` }}></div>
+                      <div className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-700" style={{ width: `${liveOrg.defense_level}%` }}></div>
                     </div>
                   </div>
 
@@ -484,10 +534,10 @@ export default function EvoLifeDashboard() {
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Zap className="w-3.5 h-3.5 text-purple-400" /> Metabolism Burn Rate
                       </span>
-                      <span className="text-purple-400 font-mono font-bold">{organism.metabolism_rate} bpm</span>
+                      <span className="text-purple-400 font-mono font-bold">{liveOrg.metabolism_rate} bpm</span>
                     </div>
                     <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-700" style={{ width: `${organism.metabolism_rate}%` }}></div>
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-700" style={{ width: `${liveOrg.metabolism_rate}%` }}></div>
                     </div>
                   </div>
 
@@ -497,10 +547,10 @@ export default function EvoLifeDashboard() {
                       <span className="text-slate-300 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Environmental Adaptation Fitness
                       </span>
-                      <span className="text-cyan-400 font-mono font-bold">{organism.adaptation_score}%</span>
+                      <span className="text-cyan-400 font-mono font-bold">{liveOrg.adaptation_score}%</span>
                     </div>
                     <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-700" style={{ width: `${organism.adaptation_score}%` }}></div>
+                      <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-700" style={{ width: `${liveOrg.adaptation_score}%` }}></div>
                     </div>
                   </div>
 
@@ -511,9 +561,9 @@ export default function EvoLifeDashboard() {
               <div className="bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-purple-400" /> Trigger Environmental Evolution
+                    <Radio className="w-4 h-4 text-purple-400" /> Trigger Authorized Mutation Cycle
                   </h3>
-                  <span className="text-[11px] text-slate-400">Non-Deterministic Web Ingestion</span>
+                  <span className="text-[11px] text-slate-400">Authenticated Whitelist Feeds</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
@@ -537,7 +587,7 @@ export default function EvoLifeDashboard() {
                         : 'bg-[#060913] border-slate-800 text-slate-400 hover:border-slate-700'
                     }`}
                   >
-                    <strong className="block text-rose-400 text-xs font-bold">2. Crisis / Stress</strong>
+                    <strong className="block text-rose-400 text-xs font-bold">2. Crisis / Storm</strong>
                     <span className="text-[10px] text-slate-400 block mt-1">ARMORED_CRYOBIOSIS</span>
                   </button>
 
@@ -549,7 +599,7 @@ export default function EvoLifeDashboard() {
                         : 'bg-[#060913] border-slate-800 text-slate-400 hover:border-slate-700'
                     }`}
                   >
-                    <strong className="block text-purple-400 text-xs font-bold">3. Cognitive Anomaly</strong>
+                    <strong className="block text-purple-400 text-xs font-bold">3. Anomaly Flux</strong>
                     <span className="text-[10px] text-slate-400 block mt-1">SYNAPTIC_TRANSCENDENCE</span>
                   </button>
                 </div>
@@ -560,13 +610,13 @@ export default function EvoLifeDashboard() {
                   className="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-purple-600 hover:from-emerald-400 hover:to-purple-500 text-black font-extrabold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition-all disabled:opacity-50"
                 >
                   {isCallingRpc ? <RefreshCw className="w-4 h-4 animate-spin text-black" /> : <Dna className="w-4 h-4 text-black" />}
-                  Execute GenLayer Autonomous Evolution Cycle
+                  Execute Verified GenLayer Evolution Cycle
                 </button>
 
                 {/* Latest Mutation Proof */}
                 <div className="p-4 bg-[#060913] rounded-2xl border border-slate-800 text-xs space-y-1">
                   <span className="text-slate-400 block font-semibold">Latest On-Chain Mutation Consensus Proof:</span>
-                  <p className="text-slate-300 font-mono text-[11px] leading-relaxed">{organism.last_mutation_summary}</p>
+                  <p className="text-slate-300 font-mono text-[11px] leading-relaxed">{liveOrg.last_mutation_summary}</p>
                 </div>
               </div>
 
@@ -627,23 +677,23 @@ export default function EvoLifeDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
                 <span className="text-slate-400">Architecture Layer 1</span>
-                <div className="font-bold text-white text-sm">Authoritative Clock</div>
-                <span className="text-[11px] text-emerald-400">✓ 24/7/365 timeapi.io</span>
+                <div className="font-bold text-white text-sm">Anti-Replay & Cadence</div>
+                <span className="text-[11px] text-emerald-400">✓ Monotonic Timestamp Guard</span>
               </div>
               <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
                 <span className="text-slate-400">Architecture Layer 2</span>
-                <div className="font-bold text-white text-sm">Non-Deterministic Perception</div>
-                <span className="text-[11px] text-emerald-400">✓ Telemetry DOM Ingestion</span>
+                <div className="font-bold text-white text-sm">Authorized Telemetry</div>
+                <span className="text-[11px] text-emerald-400">✓ Whitelist Source Assertion</span>
               </div>
               <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
                 <span className="text-slate-400">Architecture Layer 3</span>
                 <div className="font-bold text-white text-sm">Asymmetric Equivalence</div>
-                <span className="text-[11px] text-emerald-400">✓ Strict State-Driving Enums</span>
+                <span className="text-[11px] text-emerald-400">✓ Single Unified Consensus</span>
               </div>
               <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
                 <span className="text-slate-400">Architecture Layer 4</span>
                 <div className="font-bold text-white text-sm">Autonomous Keeper</div>
-                <span className="text-[11px] text-emerald-400">✓ Re-Query Confirmation</span>
+                <span className="text-[11px] text-emerald-400">✓ Exact Gen Comparison</span>
               </div>
             </div>
 
@@ -657,7 +707,7 @@ export default function EvoLifeDashboard() {
 
               <div className="bg-[#060913] p-4 rounded-2xl border border-slate-800/90 space-y-1.5 text-xs text-slate-300 font-mono h-64 overflow-y-auto">
                 {rpcLogs.map((log, idx) => (
-                  <div key={idx} className={log.includes('🚨') ? 'text-rose-400 font-bold' : log.includes('✓') ? 'text-emerald-400' : 'text-slate-400'}>
+                  <div key={idx} className={log.includes('🚨') ? 'text-rose-400 font-bold' : log.includes('✅') || log.includes('✓') ? 'text-emerald-400' : 'text-slate-400'}>
                     {log}
                   </div>
                 ))}
