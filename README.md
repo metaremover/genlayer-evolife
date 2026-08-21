@@ -8,7 +8,7 @@ Built to fulfill GenLayer Core's official wishlist (*"Lifeform: A self-evolving 
 
 ## 🔗 Live Deployment & Repository Links
 
-- **GenLayer Explorer Contract**: [`0x2080A28f61b3443D1682A57a7e6838cb06e50c0f`](https://explorer-studio.genlayer.com/address/0x2080A28f61b3443D1682A57a7e6838cb06e50c0f)
+- **GenLayer Explorer Contract**: [`0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA`](https://explorer-studio.genlayer.com/address/0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA)
 - **GitHub Repository**: [`https://github.com/metaremover/genlayer-evolife`](https://github.com/metaremover/genlayer-evolife)
 - **Live Cybernetic Dashboard**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
 
@@ -20,8 +20,9 @@ Smart contracts on Ethereum, Solana, and EVM are static, lifeless bytecodes. The
 
 **EvoLife introduces autonomous on-chain biological adaptation**:
 1. **Real-World Environmental Perception**: Scrapes macroeconomic volatility indices, news sentiment, and ecosystem telemetry.
-2. **Asymmetric Equivalence Consensus**: AI validators reason over threats and opportunities to mutate the organism's morphology (`ARMORED_CRYOBIOSIS`, `BIOLUMINESCENT_BLOOM`, `SYNAPTIC_TRANSCENDENCE`).
-3. **On-Chain Generational Lineage**: Records historical evolutionary epochs and mutations permanently on GenLayer storage.
+2. **Authorized Whitelist & Anti-Replay Cadence Guard**: Validates authorized telemetry domains and enforces strictly increasing non-replayable timestamps.
+3. **Asymmetric Equivalence Consensus**: AI validators reason over threats and opportunities to mutate the organism's morphology (`ARMORED_CRYOBIOSIS`, `BIOLUMINESCENT_BLOOM`, `SYNAPTIC_TRANSCENDENCE`).
+4. **On-Chain Generational Lineage**: Records historical evolutionary epochs and mutations permanently on GenLayer storage.
 
 ---
 
@@ -31,10 +32,10 @@ Smart contracts on Ethereum, Solana, and EVM are static, lifeless bytecodes. The
 +--------------------------------------------------------------------------------------------------+
 |                                  EVOLIFE SYMBIOSIS MATRIX                                        |
 +--------------------------------------------------------------------------------------------------+
-| [Layer 1: Authoritative Clock Guard] -> Queries atomic UTC clock (timeapi.io) for freshness.    |
-| [Layer 2: Non-Deterministic Ingestion] -> Scrapes live telemetry DOMs via gl.nondet.web.render().|
-| [Layer 3: Asymmetric Equivalence]    -> Strict state-driving enums + deterministic vitals.       |
-| [Layer 4: Autonomous Keeper Loop]    -> Habitat keeper triggers cycles & re-queries flat state.  |
+| [Layer 1: Authorized Telemetry Guard] -> Enforces authorized feed whitelist in contract source.  |
+| [Layer 2: Anti-Replay & Cadence Guard] -> Enforces monotonic timestamp validation (timeapi.io). |
+| [Layer 3: Asymmetric Equivalence]     -> Unified consensus pass for deterministic state mutation.|
+| [Layer 4: Autonomous Keeper Loop]     -> Compares exact generation before and after finality.    |
 +--------------------------------------------------------------------------------------------------+
 ```
 
@@ -63,7 +64,7 @@ Open [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/) to view 
 
 ```bash
 export GENLAYER_RPC="https://studio.genlayer.com/api"
-export EVOLIFE_CONTRACT="0x2080A28f61b3443D1682A57a7e6838cb06e50c0f"
+export EVOLIFE_CONTRACT="0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA"
 export ENV_TELEMETRY_URL="https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html"
 
 # Run autonomous habitat loop
