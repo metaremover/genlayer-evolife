@@ -30,7 +30,7 @@ logging.basicConfig(
 
 # Configuration from Environment
 GENLAYER_RPC = os.getenv("GENLAYER_RPC", "https://studio.genlayer.com/api")
-CONTRACT_ADDRESS = os.getenv("EVOLIFE_CONTRACT", "0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA")
+CONTRACT_ADDRESS = os.getenv("EVOLIFE_CONTRACT", "0xB38a1FA6B864d36274075849194CEE42484713b5")
 DEFAULT_ENV_URL = os.getenv("ENV_TELEMETRY_URL", "https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html")
 POLL_INTERVAL_SECONDS = int(os.getenv("POLL_INTERVAL_SECONDS", "60"))
 

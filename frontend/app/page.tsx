@@ -24,7 +24,7 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA';
+const CONTRACT_ADDRESS = '0xB38a1FA6B864d36274075849194CEE42484713b5';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
 interface GenerationRecord {
@@ -513,7 +513,7 @@ export default function EvoLifeDashboard() {
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-emerald-400" /> On-Chain Generational Lineage Tree
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Archived permanently on GenLayer storage (`0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA`).</p>
+                <p className="text-xs text-slate-400 mt-1">Archived permanently on GenLayer storage (`0xB38a1FA6B864d36274075849194CEE42484713b5`).</p>
               </div>
               <span className="text-xs font-mono text-emerald-400 bg-emerald-950 border border-emerald-800/50 px-3 py-1 rounded-full">
                 Total Epochs: {genealogy.length}

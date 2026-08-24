@@ -7,7 +7,7 @@ Fulfills **GenLayer Core Wishlist Item #8 (Self-Evolving Lifeform)**.
 ---
 
 ## 🔗 Verified Deployments & Links
-- **GenLayer Explorer Contract**: [`0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA`](https://explorer-studio.genlayer.com/address/0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA)
+- **GenLayer Explorer Contract**: [`0xB38a1FA6B864d36274075849194CEE42484713b5`](https://explorer-studio.genlayer.com/address/0xB38a1FA6B864d36274075849194CEE42484713b5)
 - **GitHub Repository**: [`https://github.com/metaremover/genlayer-evolife`](https://github.com/metaremover/genlayer-evolife)
 - **Live Cybernetic Habitat**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
 
