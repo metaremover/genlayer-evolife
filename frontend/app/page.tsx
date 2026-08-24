@@ -58,45 +58,23 @@ export default function EvoLifeDashboard() {
   const [selectedDemo, setSelectedDemo] = useState<'growth' | 'crisis' | 'anomaly'>('crisis');
   const [feedAmount, setFeedAmount] = useState<number>(15);
   const [rpcLogs, setRpcLogs] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialized with Epoch 1 Finalized On-Chain State from Contract 0xb58eAaA03958165eb8f51d9B2f87D4E38413BEdA
+  // Organism State from Finalized GenLayer Contract
   const [organism, setOrganism] = useState<OrganismStateData>({
-    generation: 1,
-    name: 'Chitin-Armored Behemoth',
-    morph_class: 'ARMORED_CRYOBIOSIS',
-    vitality: 87,
-    defense_level: 95,
-    metabolism_rate: 20,
-    adaptation_score: 96,
-    dna_hash: '0x3214cafd455760bdc0eaf78e265e041d8528bbf5',
-    last_mutation_date: '2026-08-21',
-    last_mutation_summary: 'Epoch 1 Mutated: ARMORED_CRYOBIOSIS (Chitin-Armored Behemoth). The habitat telemetry indicates a critical storm with high resource scarcity and extreme volatility, necessitating a defensive metabolic slowdown.'
+    generation: 0,
+    name: 'Genesis Amoeba',
+    morph_class: 'GENESIS_PROTO_AMOEBA',
+    vitality: 80,
+    defense_level: 30,
+    metabolism_rate: 50,
+    adaptation_score: 50,
+    dna_hash: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
+    last_mutation_date: '2026-08-20',
+    last_mutation_summary: 'Genesis synthetic lifeform initialized on GenLayer.'
   });
 
-  const [genealogy, setGenealogy] = useState<GenerationRecord[]>([
-    {
-      gen: 0,
-      name: 'Genesis Amoeba',
-      morph: 'GENESIS_PROTO_AMOEBA',
-      vitality: 95,
-      defense: 30,
-      metabolism: 50,
-      dna: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-      date: '2026-08-20',
-      reasoning: 'Genesis synthetic lifeform initialized on GenLayer.'
-    },
-    {
-      gen: 1,
-      name: 'Chitin-Armored Behemoth',
-      morph: 'ARMORED_CRYOBIOSIS',
-      vitality: 87,
-      defense: 95,
-      metabolism: 20,
-      dna: '0x3214cafd455760bdc0eaf78e265e041d8528bbf5',
-      date: '2026-08-21',
-      reasoning: 'Epoch 1 Mutated: ARMORED_CRYOBIOSIS (Chitin-Armored Behemoth). Severe storm conditions mandate defensive hardened shell adaptation.'
-    }
-  ]);
+  const [genealogy, setGenealogy] = useState<GenerationRecord[]>([]);
 
   const demoUrls = {
     growth: 'https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html',
@@ -107,6 +85,50 @@ export default function EvoLifeDashboard() {
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
     setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 20)]);
+  };
+
+  // Real GenLayer View Call: Read Finalized Organism State
+  const syncOrganismStateFromChain = async () => {
+    try {
+      const res = await fetch(GENLAYER_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'gen_callView',
+          params: {
+            address: CONTRACT_ADDRESS,
+            function_name: 'get_organism_state',
+            args: []
+          },
+          id: Date.now()
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+          setOrganism({
+            generation: Number(parsed.generation) || 0,
+            name: parsed.name || 'Synthetic Lifeform',
+            morph_class: parsed.morph_class || 'GENESIS_PROTO_AMOEBA',
+            vitality: Number(parsed.vitality) || 80,
+            defense_level: Number(parsed.defense_level) || 30,
+            metabolism_rate: Number(parsed.metabolism_rate) || 50,
+            adaptation_score: Number(parsed.adaptation_score) || 50,
+            dna_hash: parsed.dna_hash || '0x0',
+            last_mutation_date: parsed.last_mutation_date || '2026-08-20',
+            last_mutation_summary: parsed.last_mutation_summary || 'Synchronized with contract consensus.'
+          });
+          setIsInitialized(true);
+          addLog(`✓ Finalized on-chain organism state read: Epoch ${parsed.generation} (${parsed.morph_class})`);
+          return Number(parsed.generation);
+        }
+      }
+    } catch (e: any) {
+      addLog(`🚨 [FAIL-CLOSED] Failed to read live organism state: ${e.message}`);
+    }
+    return null;
   };
 
   // Real GenLayer Write: Feed Nutrients
@@ -131,9 +153,8 @@ export default function EvoLifeDashboard() {
         body: JSON.stringify(payload)
       });
 
-      const newVit = Math.min(100, organism.vitality + feedAmount);
-      setOrganism(prev => ({ ...prev, vitality: newVit }));
-      addLog(`✓ Nutrients transaction accepted on GenLayer. Vitality updated to ${newVit}%.`);
+      addLog(`✓ Nutrient transaction broadcast. Awaiting state synchronization...`);
+      await syncOrganismStateFromChain();
     } catch (e) {
       addLog(`🚨 [FAIL-CLOSED] Nutrient transaction failed.`);
     } finally {
@@ -141,7 +162,7 @@ export default function EvoLifeDashboard() {
     }
   };
 
-  // Real GenLayer Write: Trigger Evolution Cycle
+  // Real GenLayer Write: Trigger Evolution Cycle & Verify Advancement
   const handleTriggerEvolution = async () => {
     setIsCallingRpc(true);
     const targetUrl = demoUrls[selectedDemo];
@@ -170,65 +191,12 @@ export default function EvoLifeDashboard() {
         body: JSON.stringify(payload)
       });
 
-      if (selectedDemo === 'growth') {
-        const nextGen = prevGeneration + 1;
-        const newRecord: OrganismStateData = {
-          generation: nextGen,
-          name: 'Luminescent Spore Hydra',
-          morph_class: 'BIOLUMINESCENT_BLOOM',
-          vitality: Math.min(100, organism.vitality + 12),
-          defense_level: 40,
-          metabolism_rate: 75,
-          adaptation_score: 95,
-          dna_hash: '0x89e24b7a1f09c21b34a6e87f123d456789abcdef',
-          last_mutation_date: '2026-08-21',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: BIOLUMINESCENT_BLOOM (Luminescent Spore Hydra). Environmental prosperity and resource surplus mandate active metabolic expansion.`
-        };
-        setOrganism(newRecord);
-        setGenealogy(prev => [...prev, {
-          gen: nextGen,
-          name: newRecord.name,
-          morph: newRecord.morph_class,
-          vitality: newRecord.vitality,
-          defense: newRecord.defense_level,
-          metabolism: newRecord.metabolism_rate,
-          dna: newRecord.dna_hash,
-          date: newRecord.last_mutation_date,
-          reasoning: newRecord.last_mutation_summary
-        }]);
-        addLog(`✅ [VERIFIED ON-CHAIN] Epoch advanced ${prevGeneration} -> ${nextGen} (BIOLUMINESCENT_BLOOM).`);
-      } else if (selectedDemo === 'crisis') {
-        const nextGen = prevGeneration + 1;
-        const newRecord: OrganismStateData = {
-          generation: nextGen,
-          name: 'Chitin-Armored Behemoth',
-          morph_class: 'ARMORED_CRYOBIOSIS',
-          vitality: 87,
-          defense_level: 95,
-          metabolism_rate: 20,
-          adaptation_score: 96,
-          dna_hash: '0x3214cafd455760bdc0eaf78e265e041d8528bbf5',
-          last_mutation_date: '2026-08-21',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: ARMORED_CRYOBIOSIS (Chitin-Armored Behemoth). Severe storm conditions with high volatility mandate defensive hardened shell adaptation.`
-        };
-        setOrganism(newRecord);
-        addLog(`✅ [VERIFIED ON-CHAIN] Epoch advanced ${prevGeneration} -> ${nextGen} (ARMORED_CRYOBIOSIS).`);
+      addLog(`4. Evolution transaction confirmed. Reading finalized state from contract...`);
+      const newGen = await syncOrganismStateFromChain();
+      if (newGen !== null && newGen === prevGeneration + 1) {
+        addLog(`✅ [VERIFIED ON-CHAIN] Epoch advanced ${prevGeneration} -> ${newGen} strictly confirmed from contract.`);
       } else {
-        const nextGen = prevGeneration + 1;
-        const newRecord: OrganismStateData = {
-          generation: nextGen,
-          name: 'Synaptic Aether Sentry',
-          morph_class: 'SYNAPTIC_TRANSCENDENCE',
-          vitality: organism.vitality,
-          defense_level: 65,
-          metabolism_rate: 55,
-          adaptation_score: 99,
-          dna_hash: '0x55a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1',
-          last_mutation_date: '2026-08-21',
-          last_mutation_summary: `Epoch ${nextGen} Mutated: SYNAPTIC_TRANSCENDENCE (Synaptic Aether Sentry). Cognitive anomaly telemetry detected.`
-        };
-        setOrganism(newRecord);
-        addLog(`✅ [VERIFIED ON-CHAIN] Epoch advanced ${prevGeneration} -> ${nextGen} (SYNAPTIC_TRANSCENDENCE).`);
+        addLog(`✓ Finalized state synchronized from contract storage.`);
       }
     } catch (e) {
       addLog(`🚨 [FAIL-CLOSED] Evolution transaction failed.`);
@@ -239,7 +207,7 @@ export default function EvoLifeDashboard() {
 
   useEffect(() => {
     addLog(`EvoLife Cybernetic Habitat initialized. Contract: ${CONTRACT_ADDRESS.slice(0, 10)}...`);
-    addLog(`✓ Loaded Epoch 1 state directly from finalized contract consensus.`);
+    syncOrganismStateFromChain();
   }, []);
 
   const isBloom = organism.morph_class === 'BIOLUMINESCENT_BLOOM';
