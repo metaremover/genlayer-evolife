@@ -7,10 +7,10 @@ and defense genome in response to live environmental telemetry via AI consensus.
 
 Steward Compliance Invariants (ODbeke Review Hardened):
 1. Authorized Telemetry Whitelist: Restricts ingestion strictly to whitelisted authenticated telemetry domains.
-2. Anti-Replay & Cadence Protection: Enforces strict timestamp monotonic increase (full_timestamp > last_mutation_timestamp).
-3. Verified Generation Advancement: Exactly tracks and guarantees generation == prev_generation + 1.
+2. Anti-Replay & Real Cadence Guard: Enforces strict monotonic timestamp advancement (full_timestamp > last_mutation_timestamp) AND unique per-generation telemetry fingerprinting (used_telemetry_hashes).
+3. Verified Generation Advancement: Exactly tracks and guarantees new_generation == prev_generation + 1.
 4. Single-Round Unified Consensus: Combines 24/7 UTC Atomic Clock (timeapi.io) and telemetry in 1 parallel prompt.
-5. 100% Fail-Closed Resilience: Reverts and freezes state on any unparseable DOM or replay attempt.
+5. 100% Fail-Closed Resilience: Reverts and freezes state on any unparseable DOM, clock error, or replay attempt.
 """
 
 import json
@@ -43,6 +43,7 @@ class EvoLifeCourt(gl.Contract):
     last_mutation_timestamp: str
     epochs: TreeMap[str, OrganismRecord]
     authorized_sources: TreeMap[str, bool]
+    used_telemetry_hashes: TreeMap[str, bool]
     total_generations: u256
 
     def __init__(self, operator: str):
@@ -114,7 +115,7 @@ class EvoLifeCourt(gl.Contract):
     def trigger_evolution_cycle(self, env_feed_url: str) -> str:
         """
         Perceives external environment signals, enforces authorized source whitelist,
-        verifies non-replayable timestamp cadence, and mutates the on-chain organism autonomously.
+        verifies non-replayable timestamp cadence and telemetry fingerprints, and mutates the on-chain organism autonomously.
         """
         clean_url = env_feed_url.strip().strip('"').strip("'")
         
@@ -216,12 +217,17 @@ class EvoLifeCourt(gl.Contract):
         clock_fresh = bool(res_parsed.get("clock_fresh", False))
         assert clock_fresh == True, "[ERR_CLOCK_01] Failed to retrieve fresh authoritative UTC clock (Fail-Closed)."
 
-        today_str = str(res_parsed.get("today_date", "2026-08-21"))
-        full_timestamp = str(res_parsed.get("full_timestamp", "2026-08-21 00:00:00"))
+        today_str = str(res_parsed.get("today_date", "2026-08-24"))
+        full_timestamp = str(res_parsed.get("full_timestamp", "2026-08-24 00:00:00"))
 
-        # INVARIANT 2: ANTI-REPLAY & CADENCE PROTECTION
+        # INVARIANT 2: MONOTONIC TIMESTAMP CADENCE GUARD
         assert full_timestamp > last_mut_ts, \
             f"[ERR_REPLAY_01] Stale or replayed telemetry timestamp ({full_timestamp} <= {last_mut_ts}). Cadence protection active."
+
+        # INVARIANT 3: TELEMETRY CONTENT & EPOCH FINGERPRINT ANTI-REPLAY
+        telemetry_fingerprint = f"{clean_url}_{curr_gen_int}_{today_str}"
+        assert telemetry_fingerprint not in self.used_telemetry_hashes, \
+            f"[ERR_CADENCE_02] Replay blocked: Telemetry feed {clean_url} has already been executed for Epoch {curr_gen_int} on date {today_str}."
 
         telemetry_valid = bool(res_parsed.get("telemetry_valid", False))
         assert telemetry_valid == True, "[ERR_TELEMETRY_01] Telemetry stream invalid or inaccessible (Fail-Closed)."
@@ -238,69 +244,67 @@ class EvoLifeCourt(gl.Contract):
             a_score = 96
         elif state_enum == "BIOLUMINESCENT_BLOOM":
             morph_name = "Luminescent Spore Hydra"
-            v_new = min(100, curr_vit + 12) # vitality boost
-            d_new = 40                      # light defense
-            m_new = 75                      # active metabolism
-            a_score = 95
+            v_new = min(100, curr_vit + 12) # nutrient abundance
+            d_new = 40
+            m_new = 85                      # active metabolism
+            a_score = 88
         else: # SYNAPTIC_TRANSCENDENCE
-            morph_name = "Synaptic Aether Sentry"
-            v_new = curr_vit
-            d_new = 65
-            m_new = 55
+            morph_name = "Psionic Void Leviathan"
+            v_new = min(100, curr_vit + 5)
+            d_new = 75
+            m_new = 65
             a_score = 99
 
-        # INVARIANT 3: VERIFIED GENERATIONAL ADVANCEMENT
-        next_gen_num = curr_gen_int + 1
-        gen_u256 = u256(next_gen_num)
+        # ADVANCE ON-CHAIN GENERATION (Strict Invariant: next_gen == prev_gen + 1)
+        next_gen = curr_gen_int + 1
+        dna_raw = f"{curr_rec.dna_hash}:{state_enum}:{v_new}:{d_new}:{next_gen}:{full_timestamp}"
+        new_dna = "0x" + hashlib.sha256(dna_raw.encode("utf-8")).hexdigest()[:40]
 
-        # Compute new DNA Hash
-        raw_dna = f"EVOLIFE_GEN_{next_gen_num}_{state_enum}_{d_new}_{m_new}_{today_str}"
-        new_dna_hash = "0x" + hashlib.sha256(raw_dna.encode("utf-8")).hexdigest()[:40]
+        summary = f"Epoch {next_gen} Mutated: {state_enum} ({morph_name}). {reasoning}"
 
-        summary = f"Epoch {next_gen_num} Mutated: {state_enum} ({morph_name}). {reasoning}"
-
-        # Store New Epoch Record in TreeMap
         new_record = OrganismRecord(
-            generation=gen_u256,
+            generation=u256(next_gen),
             name=morph_name,
             morph_class=state_enum,
             vitality=u256(v_new),
             defense_level=u256(d_new),
             metabolism_rate=u256(m_new),
             adaptation_score=u256(a_score),
-            dna_hash=new_dna_hash,
+            dna_hash=new_dna,
             last_mutation_date=today_str,
             last_mutation_timestamp=full_timestamp,
             last_mutation_summary=summary,
             trigger_env_url=clean_url
         )
 
-        self.epochs[str(next_gen_num)] = new_record
-        self.current_generation = gen_u256
+        self.epochs[str(next_gen)] = new_record
+        self.current_generation = u256(next_gen)
         self.last_mutation_timestamp = full_timestamp
-        self.total_generations = u256(next_gen_num + 1)
+        self.used_telemetry_hashes[telemetry_fingerprint] = True
+        self.total_generations = u256(int(self.total_generations) + 1)
 
         return summary
 
     @gl.public.view
     def get_organism_state(self) -> OrganismRecord:
-        """Returns the current epoch's live organism state."""
+        """Queries the live real-time genome and morphological state of the organism."""
         curr_key = str(int(self.current_generation))
         return self.epochs[curr_key]
 
     @gl.public.view
     def get_generation_record(self, gen_id: str) -> OrganismRecord:
-        """Returns any historical epoch record by its generation number string (e.g. '0', '1')."""
-        key = str(gen_id).strip()
-        assert key in self.epochs, "[ERR_STATE_01] Generation record does not exist."
-        return self.epochs[key]
+        """Historical genealogical view: queries exact genome record for any past generation."""
+        g_key = gen_id.strip()
+        assert g_key in self.epochs, f"[ERR_STATE_01] Generation epoch {g_key} does not exist."
+        return self.epochs[g_key]
 
     @gl.public.view
     def get_total_generations(self) -> u256:
+        """Returns total historical evolutionary epochs recorded on-chain."""
         return self.total_generations
 
     @gl.public.view
     def is_source_authorized(self, source_url: str) -> bool:
-        """View method to verify if a telemetry source is authorized."""
+        """Verifies if an environmental telemetry feed is in the authorized whitelist."""
         clean_url = source_url.strip().strip('"').strip("'")
         return bool(self.authorized_sources.get(clean_url, False))
