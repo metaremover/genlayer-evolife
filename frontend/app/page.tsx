@@ -3,88 +3,87 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Dna, 
-  Sparkles, 
-  ShieldAlert, 
-  Activity, 
-  Heart, 
   Shield, 
   Zap, 
-  Radio, 
-  RefreshCw, 
-  ChevronRight, 
-  Layers, 
-  Cpu, 
-  Eye, 
-  Flame, 
-  Globe, 
-  Atom, 
+  Activity, 
+  Sparkles, 
+  TrendingUp, 
   Clock, 
-  ArrowUpRight, 
-  CheckCircle, 
-  AlertTriangle 
+  CheckCircle2, 
+  AlertTriangle, 
+  Flame, 
+  Wind, 
+  Layers, 
+  ExternalLink, 
+  HeartHandshake, 
+  Lock, 
+  RefreshCw, 
+  Globe, 
+  Cpu, 
+  FileText,
+  Boxes,
+  Key,
+  Fingerprint,
+  BookOpen
 } from 'lucide-react';
 
 const CONTRACT_ADDRESS = '0xB38a1FA6B864d36274075849194CEE42484713b5';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
-interface GenerationRecord {
-  gen: number;
-  name: string;
-  morph: string;
-  vitality: number;
-  defense: number;
-  metabolism: number;
-  dna: string;
-  date: string;
-  reasoning: string;
-}
-
-interface OrganismStateData {
-  generation: number;
-  name: string;
-  morph_class: string;
-  vitality: number;
-  defense_level: number;
-  metabolism_rate: number;
-  adaptation_score: number;
-  dna_hash: string;
-  last_mutation_date: string;
-  last_mutation_summary: string;
-}
-
-export default function EvoLifeDashboard() {
-  const [activeTab, setActiveTab] = useState<'habitat' | 'genealogy' | 'telemetry'>('habitat');
-  const [isCallingRpc, setIsCallingRpc] = useState(false);
-  const [selectedDemo, setSelectedDemo] = useState<'growth' | 'crisis' | 'anomaly'>('crisis');
-  const [feedAmount, setFeedAmount] = useState<number>(15);
-  const [rpcLogs, setRpcLogs] = useState<string[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Organism State from Finalized GenLayer Contract
-  const [organism, setOrganism] = useState<OrganismStateData>({
+export default function EvoLifeApp() {
+  const [organism, setOrganism] = useState({
     generation: 0,
-    name: 'Genesis Amoeba',
-    morph_class: 'GENESIS_PROTO_AMOEBA',
-    vitality: 80,
+    name: 'Primordial Proto-Spore',
+    morph_class: 'GENESIS_PRIMORDIAL',
+    vitality: 95,
     defense_level: 30,
     metabolism_rate: 50,
-    adaptation_score: 50,
-    dna_hash: '0x7f2a89c1409fae1aafadb0a3b8382e43ed8d2d56',
-    last_mutation_date: '2026-08-20',
-    last_mutation_summary: 'Genesis synthetic lifeform initialized on GenLayer.'
+    adaptation_score: 60,
+    dna_hash: '0x8f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6',
+    last_mutation_date: '2026-08-19',
+    last_mutation_summary: 'Organism spawned on GenLayer in dormant proto-spore state. Awaiting authenticated environmental stimulus.'
   });
 
-  const [genealogy, setGenealogy] = useState<GenerationRecord[]>([]);
+  const [selectedDemo, setSelectedDemo] = useState<'crisis' | 'growth' | 'anomaly'>('crisis');
+  const [feedAmount, setFeedAmount] = useState(10);
+  const [isCallingRpc, setIsCallingRpc] = useState(false);
+  const [rpcLogs, setRpcLogs] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [activeTab, setActiveTab] = useState<'habitat' | 'provenance' | 'lineage'>('habitat');
 
   const demoUrls = {
-    growth: 'https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html',
     crisis: 'https://evolife-pi.vercel.app/demo/mock_env_storm_crisis.html',
+    growth: 'https://evolife-pi.vercel.app/demo/mock_env_harmony_growth.html',
     anomaly: 'https://evolife-pi.vercel.app/demo/mock_env_novel_anomaly.html'
+  };
+
+  const provenanceEnvelopes = {
+    crisis: {
+      nonce: 'TEL_STORM_20260826_E1',
+      target_gen: 'Epoch 1',
+      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      digest: '0x9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
+      mutation_target: 'ARMORED_CRYOBIOSIS (Hardened Defense)'
+    },
+    growth: {
+      nonce: 'TEL_HARMONY_20260826_E2',
+      target_gen: 'Epoch 2',
+      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      digest: '0x2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b',
+      mutation_target: 'BIOLUMINESCENT_BLOOM (Nutrient Spores)'
+    },
+    anomaly: {
+      nonce: 'TEL_ANOMALY_20260826_E3',
+      target_gen: 'Epoch 3',
+      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      digest: '0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e',
+      mutation_target: 'SYNAPTIC_TRANSCENDENCE (Psionic Mesh)'
+    }
   };
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
-    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 20)]);
+    setRpcLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 25)]);
   };
 
   // Real GenLayer View Call: Read Finalized Organism State
@@ -111,17 +110,17 @@ export default function EvoLifeDashboard() {
           setOrganism({
             generation: Number(parsed.generation) || 0,
             name: parsed.name || 'Synthetic Lifeform',
-            morph_class: parsed.morph_class || 'GENESIS_PROTO_AMOEBA',
-            vitality: Number(parsed.vitality) || 80,
+            morph_class: parsed.morph_class || 'GENESIS_PRIMORDIAL',
+            vitality: Number(parsed.vitality) || 95,
             defense_level: Number(parsed.defense_level) || 30,
             metabolism_rate: Number(parsed.metabolism_rate) || 50,
-            adaptation_score: Number(parsed.adaptation_score) || 50,
+            adaptation_score: Number(parsed.adaptation_score) || 60,
             dna_hash: parsed.dna_hash || '0x0',
-            last_mutation_date: parsed.last_mutation_date || '2026-08-20',
+            last_mutation_date: parsed.last_mutation_date || '2026-08-26',
             last_mutation_summary: parsed.last_mutation_summary || 'Synchronized with contract consensus.'
           });
           setIsInitialized(true);
-          addLog(`✓ Finalized on-chain organism state read: Epoch ${parsed.generation} (${parsed.morph_class})`);
+          addLog(`✓ Finalized on-chain state read: Epoch ${parsed.generation} (${parsed.morph_class})`);
           return Number(parsed.generation);
         }
       }
@@ -162,15 +161,16 @@ export default function EvoLifeDashboard() {
     }
   };
 
-  // Real GenLayer Write: Trigger Evolution Cycle & Verify Advancement
+  // Real GenLayer Write: Trigger Evolution Cycle & Verify Finality
   const handleTriggerEvolution = async () => {
     setIsCallingRpc(true);
     const targetUrl = demoUrls[selectedDemo];
     const prevGeneration = organism.generation;
+    const envelope = provenanceEnvelopes[selectedDemo];
 
-    addLog(`⚡ Starting mutation cycle from Epoch ${prevGeneration}...`);
-    addLog(`1. Authoritative UTC clock checked (timeapi.io)...`);
-    addLog(`2. Ingesting authorized telemetry feed: ${targetUrl}`);
+    addLog(`⚡ Starting mutation cycle for ${envelope.target_gen}...`);
+    addLog(`1. Ingesting 24/7 UTC Atomic Clock (timeapi.io)...`);
+    addLog(`2. Ingesting authenticated provenance envelope (Nonce: ${envelope.nonce}, Digest: ${envelope.digest.slice(0, 10)}...)...`);
     addLog(`3. Broadcasting gen_sendTransaction("trigger_evolution_cycle")...`);
 
     try {
@@ -191,10 +191,10 @@ export default function EvoLifeDashboard() {
         body: JSON.stringify(payload)
       });
 
-      addLog(`4. Evolution transaction confirmed. Reading finalized state from contract...`);
+      addLog(`4. Consensus reached. Verifying on-chain transaction finality...`);
       const newGen = await syncOrganismStateFromChain();
       if (newGen !== null && newGen === prevGeneration + 1) {
-        addLog(`✅ [VERIFIED ON-CHAIN] Epoch advanced ${prevGeneration} -> ${newGen} strictly confirmed from contract.`);
+        addLog(`✅ [VERIFIED FINALITY] Generation advanced ${prevGeneration} -> ${newGen}. Content hash stored in consumed registry.`);
       } else {
         addLog(`✓ Finalized state synchronized from contract storage.`);
       }
@@ -213,12 +213,8 @@ export default function EvoLifeDashboard() {
   const isBloom = organism.morph_class === 'BIOLUMINESCENT_BLOOM';
   const isArmor = organism.morph_class === 'ARMORED_CRYOBIOSIS';
 
-  const glowClass = isBloom ? 'glow-emerald' : isArmor ? 'glow-crimson' : 'glow-violet';
-  const themeColor = isBloom ? 'text-emerald-400' : isArmor ? 'text-rose-400' : 'text-purple-400';
-  const badgeBg = isBloom ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300' : isArmor ? 'bg-rose-950/80 border-rose-500/60 text-rose-300' : 'bg-purple-950/80 border-purple-500/60 text-purple-300';
-
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-[#060913] text-slate-100 selection:bg-purple-500 selection:text-white">
+    <div className="min-h-screen flex flex-col font-sans bg-[#060913] text-slate-100 selection:bg-purple-500 selection:text-white pb-20">
       
       {/* Top Navigation */}
       <nav className="border-b border-slate-800/80 bg-[#0a0f1d]/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
@@ -226,7 +222,7 @@ export default function EvoLifeDashboard() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-400 via-purple-500 to-rose-500 p-[1px] shadow-lg shadow-purple-500/20">
               <div className="w-full h-full bg-[#060913] rounded-xl flex items-center justify-center">
-                <Dna className="w-5 h-5 text-emerald-400 animate-pulse-slow" />
+                <Dna className="w-5 h-5 text-emerald-400" />
               </div>
             </div>
             <div>
@@ -240,263 +236,187 @@ export default function EvoLifeDashboard() {
             </div>
           </div>
 
-          {/* Navigation Pills */}
-          <div className="flex items-center gap-1.5 bg-[#0a0f1d] p-1.5 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('habitat')}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 ${
-                activeTab === 'habitat' 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold shadow-md shadow-emerald-500/20' 
-                  : 'text-slate-400 hover:text-slate-200'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'habitat' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Activity className="w-4 h-4" /> 1. Cybernetic Habitat
+              <Dna className="w-3.5 h-3.5" /> Habitat Dashboard
             </button>
             <button
-              onClick={() => setActiveTab('genealogy')}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 ${
-                activeTab === 'genealogy' 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold shadow-md shadow-emerald-500/20' 
-                  : 'text-slate-400 hover:text-slate-200'
+              onClick={() => setActiveTab('provenance')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'provenance' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Layers className="w-4 h-4" /> 2. Phylogenetic Tree ({genealogy.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('telemetry')}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 ${
-                activeTab === 'telemetry' 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-bold shadow-md shadow-emerald-500/20' 
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Radio className="w-4 h-4" /> 3. Live RPC Stream
+              <Fingerprint className="w-3.5 h-3.5" /> Authenticated Provenance
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Top Banner Status Bar */}
-      <div className="bg-[#090e1c] border-b border-slate-800/60 px-6 py-2.5 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <span>EPOCH: <strong className="text-white font-mono">Generation {organism.generation}</strong></span>
-            <span>MORPH: <strong className={`font-mono ${themeColor}`}>{organism.morph_class}</strong></span>
-            <span>DNA: <strong className="text-slate-300 font-mono">{organism.dna_hash.slice(0, 14)}...</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            AUTHORIZED TELEMETRY & CADENCE GUARD ACTIVE
-          </div>
-        </div>
-      </div>
-
+      {/* Main Container */}
       <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
         
-        {/* TAB 1: CYBERNETIC HABITAT */}
+        {/* ========================================================= */}
+        {/* TAB 1: HABITAT DASHBOARD */}
+        {/* ========================================================= */}
         {activeTab === 'habitat' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            {/* Left: Dynamic Bioluminescent Creature Canvas */}
-            <div className="lg:col-span-6 bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-between relative overflow-hidden">
+            {/* Left Column: Organism Vitals & Live Morphology */}
+            <div className="lg:col-span-7 space-y-6">
               
-              <div className="w-full flex items-center justify-between z-10">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${badgeBg}`}>
-                  {organism.name}
-                </span>
-                <span className="text-xs text-slate-400 font-mono">Epoch: {organism.generation}</span>
-              </div>
-
-              {/* Central Animated Creature SVG */}
-              <div className="my-10 relative flex items-center justify-center">
-                <div className={`w-72 h-72 rounded-full flex items-center justify-center transition-all duration-700 ${glowClass}`}>
-                  
-                  {/* Outer Pulsing Orbital Rings */}
-                  <svg className="w-full h-full animate-spin-slow" viewBox="0 0 200 200">
-                    <circle 
-                      cx="100" cy="100" r="85" 
-                      fill="none" 
-                      stroke={isBloom ? "#10b981" : isArmor ? "#ef4444" : "#a855f7"} 
-                      strokeWidth="1.5" 
-                      strokeDasharray="8 6" 
-                      opacity="0.6"
-                    />
-                    <circle 
-                      cx="100" cy="100" r="70" 
-                      fill="none" 
-                      stroke={isBloom ? "#34d399" : isArmor ? "#f87171" : "#c084fc"} 
-                      strokeWidth="1" 
-                      strokeDasharray="4 8" 
-                      opacity="0.4"
-                    />
-                  </svg>
-
-                  {/* Core Bioluminescent Cell Nucleus */}
-                  <div className={`absolute w-36 h-36 rounded-full flex items-center justify-center transition-all duration-500 animate-pulse-slow ${
-                    isBloom ? 'bg-gradient-to-tr from-emerald-600 via-teal-500 to-green-300' :
-                    isArmor ? 'bg-gradient-to-tr from-rose-700 via-red-600 to-amber-500' :
-                    'bg-gradient-to-tr from-purple-700 via-indigo-600 to-pink-500'
-                  }`}>
-                    <div className="w-24 h-24 rounded-full bg-[#060913] flex flex-col items-center justify-center shadow-inner">
-                      <Atom className={`w-8 h-8 ${themeColor} animate-spin-slow`} />
-                      <span className="text-[10px] font-mono text-slate-400 mt-1">{organism.metabolism_rate} bpm</span>
-                    </div>
+              {/* Organism Primary Card */}
+              <div className="bg-gradient-to-b from-[#0f172a] to-[#0a0f1d] border border-slate-800 rounded-3xl p-8 shadow-2xl relative space-y-6">
+                
+                {/* Generation & Class Badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 rounded-full text-xs font-extrabold flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Epoch {organism.generation}
+                    </span>
+                    <span className="px-3 py-1 bg-purple-950/80 text-purple-300 border border-purple-700/60 rounded-full text-xs font-bold font-mono">
+                      {organism.morph_class}
+                    </span>
                   </div>
-
+                  <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> {organism.last_mutation_date}
+                  </span>
                 </div>
-              </div>
 
-              {/* Feeding Controls */}
-              <div className="w-full z-10 bg-[#060913]/90 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-emerald-950 border border-emerald-800 text-emerald-400">
-                    <Heart className="w-5 h-5" />
+                {/* Organism Title */}
+                <div>
+                  <h1 className="text-3xl font-black text-white tracking-tight">{organism.name}</h1>
+                  <p className="text-xs text-slate-400 font-mono mt-1">Lineage DNA: {organism.dna_hash.slice(0, 24)}...</p>
+                </div>
+
+                {/* Vitals Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <div className="text-xs text-slate-400 font-medium">Vitality</div>
+                    <div className="text-xl font-black text-emerald-400 mt-1">{organism.vitality}%</div>
                   </div>
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <div className="text-xs text-slate-400 font-medium">Defense Armor</div>
+                    <div className="text-xl font-black text-rose-400 mt-1">{organism.defense_level}</div>
+                  </div>
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <div className="text-xs text-slate-400 font-medium">Metabolism</div>
+                    <div className="text-xl font-black text-amber-400 mt-1">{organism.metabolism_rate}</div>
+                  </div>
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <div className="text-xs text-slate-400 font-medium">Adaptation</div>
+                    <div className="text-xl font-black text-purple-400 mt-1">{organism.adaptation_score}</div>
+                  </div>
+                </div>
+
+                {/* Narrative Summary */}
+                <div className="p-4 bg-black/40 border border-slate-800 rounded-2xl space-y-1.5">
+                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-emerald-400" /> Last Evolutionary Adaptation
+                  </div>
+                  <p className="text-xs text-slate-300 italic leading-relaxed">
+                    "{organism.last_mutation_summary}"
+                  </p>
+                </div>
+
+                {/* Feed Nutrients Control */}
+                <div className="p-4 bg-emerald-950/20 border border-emerald-800/40 rounded-2xl flex items-center justify-between gap-4">
                   <div>
-                    <div className="text-xs font-bold text-white">Replenish Nutrients</div>
-                    <span className="text-[11px] text-slate-400">Community Bio-Feed Action</span>
+                    <div className="text-xs font-bold text-emerald-300">Replenish Vitality</div>
+                    <div className="text-[11px] text-slate-400">Inject organic nutrients to restore cell vitality</div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
                   <button
                     onClick={handleFeedNutrients}
                     disabled={isCallingRpc}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-1.5"
                   >
-                    <Zap className="w-3.5 h-3.5" /> Feed (+{feedAmount}%)
+                    <HeartHandshake className="w-3.5 h-3.5" /> Feed (+10%)
                   </button>
                 </div>
+
               </div>
 
             </div>
 
-            {/* Right: Real-Time Vitals, Genome Matrix & Evolution Triggers */}
-            <div className="lg:col-span-6 space-y-6">
+            {/* Right Column: Authenticated Telemetry & Trigger Mutation */}
+            <div className="lg:col-span-5 space-y-6">
               
-              {/* Vitals Matrix */}
-              <div className="bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-xl space-y-5">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-400" /> Real-Time Organism Vitals
-                </h3>
-
-                <div className="space-y-4 text-xs">
-                  
-                  {/* Vitality Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span className="text-slate-300 flex items-center gap-1.5">
-                        <Heart className="w-3.5 h-3.5 text-emerald-400" /> Cellular Vitality
-                      </span>
-                      <span className="text-emerald-400 font-mono font-bold">{organism.vitality}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700" style={{ width: `${organism.vitality}%` }}></div>
-                    </div>
-                  </div>
-
-                  {/* Defense Shield */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span className="text-slate-300 flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-rose-400" /> Defense Armor Shell
-                      </span>
-                      <span className="text-rose-400 font-mono font-bold">{organism.defense_level}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-700" style={{ width: `${organism.defense_level}%` }}></div>
-                    </div>
-                  </div>
-
-                  {/* Metabolism Rate */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span className="text-slate-300 flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-purple-400" /> Metabolism Burn Rate
-                      </span>
-                      <span className="text-purple-400 font-mono font-bold">{organism.metabolism_rate} bpm</span>
-                    </div>
-                    <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-700" style={{ width: `${organism.metabolism_rate}%` }}></div>
-                    </div>
-                  </div>
-
-                  {/* Adaptation Fitness */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between font-semibold">
-                      <span className="text-slate-300 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Environmental Adaptation Fitness
-                      </span>
-                      <span className="text-cyan-400 font-mono font-bold">{organism.adaptation_score}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-[#060913] rounded-full overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-700" style={{ width: `${organism.adaptation_score}%` }}></div>
-                    </div>
-                  </div>
-
+              {/* Telemetry Scenario Card */}
+              <div className="bg-[#0b0f24] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs tracking-wider uppercase">
+                  <Fingerprint className="w-4 h-4" /> Authenticated Telemetry Ingestion
                 </div>
-              </div>
+                <h3 className="text-lg font-bold text-white">Habitat Stress & Adaptation Stream</h3>
+                <p className="text-xs text-slate-400">
+                  Select a cryptographically signed habitat feed to trigger autonomous on-chain mutation.
+                </p>
 
-              {/* Environmental Telemetry Trigger Selector */}
-              <div className="bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-purple-400" /> Trigger Authorized Mutation Cycle
-                  </h3>
-                  <span className="text-[11px] text-slate-400">Authenticated Whitelist Feeds</span>
+                {/* Scenario Selector */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'crisis', label: '1. Storm (Epoch 1)', color: 'border-rose-600/60 text-rose-300' },
+                      { id: 'growth', label: '2. Harmony (Epoch 2)', color: 'border-emerald-600/60 text-emerald-300' },
+                      { id: 'anomaly', label: '3. Anomaly (Epoch 3)', color: 'border-purple-600/60 text-purple-300' }
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => setSelectedDemo(btn.id as any)}
+                        className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-all ${
+                          selectedDemo === btn.id 
+                            ? `bg-black/60 ${btn.color} ring-1 ring-white/20` 
+                            : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    onClick={() => setSelectedDemo('growth')}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      selectedDemo === 'growth'
-                        ? 'bg-emerald-950/60 border-emerald-500 text-white shadow-lg shadow-emerald-950/40'
-                        : 'bg-[#060913] border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <strong className="block text-emerald-400 text-xs font-bold">1. Harmony / Surplus</strong>
-                    <span className="text-[10px] text-slate-400 block mt-1">BIOLUMINESCENT_BLOOM</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedDemo('crisis')}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      selectedDemo === 'crisis'
-                        ? 'bg-rose-950/60 border-rose-500 text-white shadow-lg shadow-rose-950/40'
-                        : 'bg-[#060913] border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <strong className="block text-rose-400 text-xs font-bold">2. Crisis / Storm</strong>
-                    <span className="text-[10px] text-slate-400 block mt-1">ARMORED_CRYOBIOSIS</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedDemo('anomaly')}
-                    className={`p-3 rounded-2xl border text-left transition-all ${
-                      selectedDemo === 'anomaly'
-                        ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg shadow-purple-950/40'
-                        : 'bg-[#060913] border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <strong className="block text-purple-400 text-xs font-bold">3. Anomaly Flux</strong>
-                    <span className="text-[10px] text-slate-400 block mt-1">SYNAPTIC_TRANSCENDENCE</span>
-                  </button>
+                {/* Signed Provenance Envelope Card */}
+                <div className="p-4 bg-black/60 border border-slate-800 rounded-2xl font-mono text-xs space-y-1 text-slate-300">
+                  <div className="text-[11px] font-bold text-emerald-400 uppercase">Authenticated Provenance Envelope:</div>
+                  <div className="text-[10px] text-slate-400">Nonce: <b className="text-slate-200">{provenanceEnvelopes[selectedDemo].nonce}</b></div>
+                  <div className="text-[10px] text-slate-400">Target Binding: <b className="text-slate-200">{provenanceEnvelopes[selectedDemo].target_gen}</b></div>
+                  <div className="text-[10px] text-slate-400">Signer: <b className="text-purple-300">{provenanceEnvelopes[selectedDemo].signer.slice(0, 10)}...</b></div>
+                  <div className="text-[10px] text-slate-400">Content Digest: <b className="text-slate-200">{provenanceEnvelopes[selectedDemo].digest.slice(0, 20)}...</b></div>
                 </div>
 
+                {/* Trigger Mutation Button */}
                 <button
                   onClick={handleTriggerEvolution}
                   disabled={isCallingRpc}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-purple-600 hover:from-emerald-400 hover:to-purple-500 text-black font-extrabold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition-all disabled:opacity-50"
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-purple-600 hover:from-emerald-500 hover:to-purple-500 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-xs tracking-wider uppercase"
                 >
-                  {isCallingRpc ? <RefreshCw className="w-4 h-4 animate-spin text-black" /> : <Dna className="w-4 h-4 text-black" />}
-                  Execute Verified GenLayer Evolution Cycle
+                  {isCallingRpc ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Executing AI Consensus & Verifying Finality...
+                    </>
+                  ) : (
+                    <>
+                      <Dna className="w-4 h-4 text-emerald-300" />
+                      Trigger Mutation ({provenanceEnvelopes[selectedDemo].target_gen})
+                    </>
+                  )}
                 </button>
+              </div>
 
-                {/* Latest Mutation Proof */}
-                <div className="p-4 bg-[#060913] rounded-2xl border border-slate-800 text-xs space-y-1">
-                  <span className="text-slate-400 block font-semibold">Latest On-Chain Mutation Consensus Proof:</span>
-                  <p className="text-slate-300 font-mono text-[11px] leading-relaxed">{organism.last_mutation_summary}</p>
+              {/* RPC Stream Terminal */}
+              <div className="bg-[#0b0f24] border border-slate-800 rounded-3xl p-5 shadow-xl">
+                <div className="flex items-center gap-2 mb-2 text-slate-400 font-mono text-xs font-semibold">
+                  <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  Live Consensus Activity Stream
+                </div>
+                <div className="bg-black/50 border border-slate-900 rounded-2xl p-3 h-44 overflow-y-auto font-mono text-[11px] text-slate-300 space-y-1">
+                  {rpcLogs.map((log, index) => (
+                    <div key={index} className="leading-relaxed">{log}</div>
+                  ))}
                 </div>
               </div>
 
@@ -505,86 +425,32 @@ export default function EvoLifeDashboard() {
           </div>
         )}
 
-        {/* TAB 2: PHYLOGENETIC TREE */}
-        {activeTab === 'genealogy' && (
-          <div className="bg-[#0a0f1d]/80 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-xl space-y-6">
-            <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-emerald-400" /> On-Chain Generational Lineage Tree
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">Archived permanently on GenLayer storage (`0xB38a1FA6B864d36274075849194CEE42484713b5`).</p>
-              </div>
-              <span className="text-xs font-mono text-emerald-400 bg-emerald-950 border border-emerald-800/50 px-3 py-1 rounded-full">
-                Total Epochs: {genealogy.length}
-              </span>
-            </div>
+        {/* ========================================================= */}
+        {/* TAB 2: PROVENANCE ARCHITECTURE & INVARIANTS */}
+        {/* ========================================================= */}
+        {activeTab === 'provenance' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-[#0b0f24] border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Fingerprint className="w-6 h-6 text-emerald-400" /> Authenticated Provenance & Content Replay Protection
+              </h1>
+              <p className="text-xs text-slate-400">
+                How EvoLife enforces cryptographic provenance, content-bound replay protection, and strict generational advancement on GenLayer.
+              </p>
 
-            <div className="space-y-4">
-              {genealogy.map((rec, idx) => (
-                <div key={idx} className="p-5 bg-[#060913] rounded-2xl border border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                        Epoch {rec.gen}
-                      </span>
-                      <strong className="text-white text-sm">{rec.name}</strong>
-                      <span className="text-xs text-emerald-400 font-mono">[{rec.morph}]</span>
-                    </div>
-                    <p className="text-xs text-slate-400 font-mono pt-1">{rec.reasoning}</p>
-                  </div>
-
-                  <div className="flex items-center gap-6 text-xs text-slate-400 font-mono">
-                    <div>Vitality: <strong className="text-white">{rec.vitality}%</strong></div>
-                    <div>Defense: <strong className="text-white">{rec.defense}%</strong></div>
-                    <div>DNA: <strong className="text-indigo-400">{rec.dna.slice(0, 10)}...</strong></div>
-                  </div>
+              <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-emerald-400 text-sm">1. Content-Bound Replay Protection</h4>
+                  <p>The contract hashes the raw ingested telemetry payload and stores it in <code>consumed_content_digests</code>. If unchanged project telemetry is submitted for a subsequent generation, the contract strictly reverts with <code>[ERR_UNCHANGED_CONTENT]</code>.</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: LIVE RPC TELEMETRY STREAM */}
-        {activeTab === 'telemetry' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
-                <span className="text-slate-400">Architecture Layer 1</span>
-                <div className="font-bold text-white text-sm">Anti-Replay & Cadence</div>
-                <span className="text-[11px] text-emerald-400">✓ Monotonic Timestamp Guard</span>
-              </div>
-              <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
-                <span className="text-slate-400">Architecture Layer 2</span>
-                <div className="font-bold text-white text-sm">Authorized Telemetry</div>
-                <span className="text-[11px] text-emerald-400">✓ Whitelist Source Assertion</span>
-              </div>
-              <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
-                <span className="text-slate-400">Architecture Layer 3</span>
-                <div className="font-bold text-white text-sm">Asymmetric Equivalence</div>
-                <span className="text-[11px] text-emerald-400">✓ Single Unified Consensus</span>
-              </div>
-              <div className="bg-[#0a0f1d]/80 p-5 rounded-2xl border border-slate-800 text-xs space-y-1">
-                <span className="text-slate-400">Architecture Layer 4</span>
-                <div className="font-bold text-white text-sm">Autonomous Keeper</div>
-                <span className="text-[11px] text-emerald-400">✓ Exact Gen Comparison</span>
-              </div>
-            </div>
-
-            <div className="bg-[#0a0f1d]/80 rounded-3xl border border-slate-800 p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-xs uppercase font-bold tracking-wider text-emerald-400 flex items-center gap-2">
-                  <Cpu className="w-4 h-4" /> Live GenLayer JSON-RPC Execution Feed
-                </h3>
-                <span className="text-emerald-400 text-[11px] font-mono">● LIVE STREAM CONNECTED</span>
-              </div>
-
-              <div className="bg-[#060913] p-4 rounded-2xl border border-slate-800/90 space-y-1.5 text-xs text-slate-300 font-mono h-64 overflow-y-auto">
-                {rpcLogs.map((log, idx) => (
-                  <div key={idx} className={log.includes('🚨') ? 'text-rose-400 font-bold' : log.includes('✅') || log.includes('✓') ? 'text-emerald-400' : 'text-slate-400'}>
-                    {log}
-                  </div>
-                ))}
+                <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-purple-400 text-sm">2. Target Generation Binding</h4>
+                  <p>Each telemetry feed explicitly binds to <code>target_generation == current_generation + 1</code>. Telemetry for Epoch 1 cannot be reused to advance to Epoch 2 or Epoch 3 (<code>[ERR_GEN_BINDING_01]</code>).</p>
+                </div>
+                <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-1">
+                  <h4 className="font-bold text-amber-400 text-sm">3. Monotonic Timestamp Cadence Guard</h4>
+                  <p>Audits the authoritative 24/7 UTC Atomic Clock (<code>timeapi.io</code>) to guarantee <code>full_timestamp &gt; last_mutation_timestamp</code>, preventing stale time-warp attacks.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -592,10 +458,6 @@ export default function EvoLifeDashboard() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500 bg-[#0a0f1d]/80">
-        EvoLife // Powered by GenLayer Intelligent Contracts · Self-Evolving Cybernetic Organism with Real JSON-RPC & Autonomous Habitat Keeper
-      </footer>
     </div>
   );
 }

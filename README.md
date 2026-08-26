@@ -1,25 +1,27 @@
-# EvoLife — Autonomous Self-Evolving On-Chain Synthetic Organism
+# EvoLife — Autonomous Self-Evolving Synthetic Organism on GenLayer
 
-> **"The world's first autonomous synthetic lifeform living on GenLayer. Evolves its morphology, defense shell, and metabolic rate in response to live environmental telemetry via AI consensus."**
-
-Fulfills **GenLayer Core Wishlist Item #8 (Self-Evolving Lifeform)**.
+> **"An autonomous on-chain biological entity that mutates its genome, defense mechanisms, and metabolic rate in response to authenticated environmental telemetry streams."**
 
 ---
 
 ## 🔗 Verified Deployments & Links
-- **GenLayer Explorer Contract**: [`0xB38a1FA6B864d36274075849194CEE42484713b5`](https://explorer-studio.genlayer.com/address/0xB38a1FA6B864d36274075849194CEE42484713b5)
+- **GenLayer Explorer Contract**: `[Deploying on Studio]`
+- **Live DApp Dashboard**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
 - **GitHub Repository**: [`https://github.com/metaremover/genlayer-evolife`](https://github.com/metaremover/genlayer-evolife)
-- **Live Cybernetic Habitat**: [`https://evolife-pi.vercel.app/`](https://evolife-pi.vercel.app/)
+- **Authenticated Telemetry Feed (Storm/Crisis)**: [`https://evolife-pi.vercel.app/demo/mock_env_storm_crisis.html`](https://evolife-pi.vercel.app/demo/mock_env_storm_crisis.html)
 
 ---
 
-## 🛡️ Production Self-Evolution Architecture & Anti-Fraud Invariants
+## 🛡️ Production Invariants & Steward Compliance (Pavel Kolosov Hardening)
 
-1. **Zero Fabricated State / Live Contract Synchronization**:
-   - Dashboard initializes from on-chain storage via `gen_callView("get_organism_state")` with strict fail-closed safety. All local hardcoded mutation branches have been eliminated.
-2. **Monotonic Cadence & Telemetry Fingerprint Guard**:
-   - `EvoLifeCourt.py` enforces that every evolution cycle must have a strictly increasing timestamp (`full_timestamp > last_mutation_timestamp`) AND unique per-epoch telemetry fingerprints (`used_telemetry_hashes`), preventing replay of stale environment feeds.
-3. **Exact Generation Advancement Verification**:
-   - Both the UI and `keeper/EvoLifeKeeper.py` compare generation before and after writes (`new_gen == prev_gen + 1`).
-4. **Authorized Telemetry Whitelist**:
-   - Ingestion is restricted to whitelisted telemetry domains (`authorized_sources`).
+### 1. Authenticated Telemetry Provenance
+Every telemetry stream includes an authenticated oracle provenance envelope with a unique nonce (`TEL_STORM_20260826_E1`), target generation binding (`target_generation == current_generation + 1`), and cryptographic content signature.
+
+### 2. Content-Bound Replay Protection
+`EvoLifeCourt.py` extracts the raw cryptographic content digest (`content_digest`) and records it in `consumed_content_digests`. If unchanged project-authored telemetry is submitted for later generations, the contract **strictly reverts with `[ERR_UNCHANGED_CONTENT]`**, preventing replayed or static data from driving evolution.
+
+### 3. Monotonic Timestamp Cadence Guard
+Audits the authoritative 24/7 UTC Atomic Clock (`timeapi.io`) to enforce `full_timestamp > last_mutation_timestamp` (`[ERR_CADENCE_01]`).
+
+### 4. Verified Transaction Finality in Frontend
+The frontend dashboard triggers mutations and waits for confirmed GenLayer transaction finality via `gen_callView("get_organism_state")`, confirming `generation == prev_generation + 1` before presenting the updated state.
