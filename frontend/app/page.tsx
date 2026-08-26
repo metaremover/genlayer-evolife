@@ -27,7 +27,7 @@ import {
   BookOpen
 } from 'lucide-react';
 
-const CONTRACT_ADDRESS = '0xB38a1FA6B864d36274075849194CEE42484713b5';
+const CONTRACT_ADDRESS = '0x0F2C4bae9Dd2b5AAa08cC8000Cd8883CCFEf058D';
 const GENLAYER_RPC = 'https://studio.genlayer.com/api';
 
 export default function EvoLifeApp() {
@@ -40,7 +40,7 @@ export default function EvoLifeApp() {
     metabolism_rate: 50,
     adaptation_score: 60,
     dna_hash: '0x8f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6',
-    last_mutation_date: '2026-08-19',
+    last_mutation_date: '2026-08-26',
     last_mutation_summary: 'Organism spawned on GenLayer in dormant proto-spore state. Awaiting authenticated environmental stimulus.'
   });
 
@@ -61,21 +61,21 @@ export default function EvoLifeApp() {
     crisis: {
       nonce: 'TEL_STORM_20260826_E1',
       target_gen: 'Epoch 1',
-      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      signer: '0x09FaE1AafADb0a3B8382E43Ed8d2d56Ba92171C3',
       digest: '0x9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
       mutation_target: 'ARMORED_CRYOBIOSIS (Hardened Defense)'
     },
     growth: {
       nonce: 'TEL_HARMONY_20260826_E2',
       target_gen: 'Epoch 2',
-      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      signer: '0x09FaE1AafADb0a3B8382E43Ed8d2d56Ba92171C3',
       digest: '0x2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b',
       mutation_target: 'BIOLUMINESCENT_BLOOM (Nutrient Spores)'
     },
     anomaly: {
       nonce: 'TEL_ANOMALY_20260826_E3',
       target_gen: 'Epoch 3',
-      signer: '0x5C48c6f77617FC05761433Cc4019A79b47d1ec7D',
+      signer: '0x09FaE1AafADb0a3B8382E43Ed8d2d56Ba92171C3',
       digest: '0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e',
       mutation_target: 'SYNAPTIC_TRANSCENDENCE (Psionic Mesh)'
     }
